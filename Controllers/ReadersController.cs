@@ -2,6 +2,9 @@
 using Library2.Models;
 using Library2.Data;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Library2.Controllers
@@ -18,7 +21,11 @@ namespace Library2.Controllers
         // GET: Readers
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Readers.ToListAsync());
+            var readers = await _context.Readers
+                .Include(r => r.BookLoans)
+                    .ThenInclude(bl => bl.Book)
+                .ToListAsync();
+            return View(readers);
         }
 
         // GET: Readers/Details/5
@@ -45,7 +52,7 @@ namespace Library2.Controllers
         // GET: Readers/Create
         public IActionResult Create()
         {
-            return View();
+            return View(new Reader());
         }
 
         // POST: Readers/Create
@@ -59,6 +66,7 @@ namespace Library2.Controllers
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
+
             return View(reader);
         }
 
@@ -75,6 +83,7 @@ namespace Library2.Controllers
             {
                 return NotFound();
             }
+
             return View(reader);
         }
 
@@ -108,6 +117,7 @@ namespace Library2.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
+
             return View(reader);
         }
 
@@ -120,7 +130,9 @@ namespace Library2.Controllers
             }
 
             var reader = await _context.Readers
+                .Include(r => r.BookLoans)
                 .FirstOrDefaultAsync(m => m.IdReader == id);
+
             if (reader == null)
             {
                 return NotFound();
@@ -134,13 +146,17 @@ namespace Library2.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
+            // Удаляем связанные BookLoans перед удалением Reader (чтобы избежать FK-ошибки)
+            var bookLoans = _context.BookLoans.Where(bl => bl.ReaderId == id); // Предполагая ReaderId в BookLoan
+            _context.BookLoans.RemoveRange(bookLoans);
+
             var reader = await _context.Readers.FindAsync(id);
             if (reader != null)
             {
                 _context.Readers.Remove(reader);
+                await _context.SaveChangesAsync();
             }
 
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 

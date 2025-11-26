@@ -1,7 +1,11 @@
-﻿using Library2.Models;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering; // Для SelectList
+using Library2.Models;
 using Library2.Data;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Library2.Controllers
@@ -27,13 +31,22 @@ namespace Library2.Controllers
         }
 
         // GET: BookLoans/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewBag.Books = _context.Books.Where(b => b.Quantity > 0).ToList();
-            ViewBag.Readers = _context.Readers.ToList();
-            ViewBag.Employees = _context.Employees.ToList();
+            // ИСПРАВЬ: Async ToList и SelectList (предполагая поля IdBook/Title для Book, IdReader/FullName для Reader, IdEmployee/Name для Employee)
+            ViewBag.Books = new SelectList(
+                await _context.Books.Where(b => b.Quantity > 0).ToListAsync(),
+                "IdBook", "Title");
 
-            return View();
+            ViewBag.Readers = new SelectList(
+                await _context.Readers.ToListAsync(),
+                "IdReader", "FullName"); // Замени "FullName" на реальное поле, если другое
+
+            ViewBag.Employees = new SelectList(
+                await _context.Employees.ToListAsync(),
+                "IdEmployee", "Name"); // Замени "Name" на реальное поле
+
+            return View(new BookLoan());
         }
 
         // POST: BookLoans/Create
@@ -43,21 +56,26 @@ namespace Library2.Controllers
         {
             if (ModelState.IsValid)
             {
-                // Уменьшаем количество доступных книг
+                // Проверяем и уменьшаем количество
                 var book = await _context.Books.FindAsync(bookLoan.BookId);
-                if (book != null && book.Quantity > 0)
+                if (book == null || book.Quantity <= 0)
                 {
-                    book.Quantity--;
-                    _context.Update(book);
+                    ModelState.AddModelError("BookId", "Книга недоступна или не существует.");
+                    await LoadViewBags(bookLoan.BookId, bookLoan.ReaderId, bookLoan.EmployeeId);
+                    return View(bookLoan);
                 }
 
+                book.Quantity--;
+                _context.Update(book);
+
+                bookLoan.LoanDate = DateTime.Now; // Установи дату выдачи, если не в модели
                 _context.Add(bookLoan);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewBag.Books = _context.Books.Where(b => b.Quantity > 0).ToList();
-            ViewBag.Readers = _context.Readers.ToList();
-            ViewBag.Employees = _context.Employees.ToList();
+
+            // При ошибке: Перезагрузи ViewBag с выбранными значениями
+            await LoadViewBags(bookLoan.BookId, bookLoan.ReaderId, bookLoan.EmployeeId);
             return View(bookLoan);
         }
 
@@ -80,11 +98,27 @@ namespace Library2.Controllers
             if (loan.Book != null)
             {
                 loan.Book.Quantity++;
+                _context.Update(loan.Book);
             }
-
             _context.Update(loan);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
+        }
+
+        // Вспомогательный метод для загрузки ViewBag (используется в Create POST)
+        private async Task LoadViewBags(int? selectedBookId = null, int? selectedReaderId = null, int? selectedEmployeeId = null)
+        {
+            ViewBag.Books = new SelectList(
+                await _context.Books.Where(b => b.Quantity > 0).ToListAsync(),
+                "IdBook", "Title", selectedBookId);
+
+            ViewBag.Readers = new SelectList(
+                await _context.Readers.ToListAsync(),
+                "IdReader", "FullName", selectedReaderId); // Замени "FullName" на реальное
+
+            ViewBag.Employees = new SelectList(
+                await _context.Employees.ToListAsync(),
+                "IdEmployee", "Name", selectedEmployeeId); // Замени "Name" на реальное
         }
     }
 }
