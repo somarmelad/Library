@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Library2.Models
 {
@@ -21,12 +20,10 @@ namespace Library2.Models
         [Required]
 
         public int Quantity { get; set; }
-
+        [Range(1, int.MaxValue, ErrorMessage = "Количество должно быть > 0")]
         // Навигационные свойства
         [ForeignKey("PublisherId")]
         public virtual Publisher Publisher { get; set; }
-
-        [ForeignKey("ShelfId")]
 
         // Связи многие-ко-многим
         public virtual ICollection<BookAuthor> BookAuthors { get; set; } = new List<BookAuthor>();

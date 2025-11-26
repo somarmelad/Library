@@ -1,20 +1,52 @@
-using System.Diagnostics;
-using Library2.Models;
+﻿using Library2.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Library2.Controllers
 {
     public class HomeController : Controller
     {
+        private readonly ApplicationDbContext _context;
         private readonly ILogger<HomeController> _logger;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ApplicationDbContext context, ILogger<HomeController> logger)
         {
+            _context = context;
             _logger = logger;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
+            try
+            {
+                // Проверяем подключение к БД
+                var canConnect = await _context.Database.CanConnectAsync();
+
+                if (canConnect)
+                {
+                    ViewBag.DbStatus = "Подключение к MySQL успешно!";
+
+                    // Пробуем получить список книг
+                    var booksCount = await _context.Books.CountAsync();
+                    ViewBag.BooksCount = booksCount;
+
+                    var readersCount = await _context.Readers.CountAsync();
+                    ViewBag.ReadersCount = readersCount;
+
+                    var loansCount = await _context.BookLoans.CountAsync();
+                    ViewBag.LoansCount = loansCount;
+                }
+                else
+                {
+                    ViewBag.DbStatus = "Не удалось подключиться к MySQL";
+                }
+            }
+            catch (Exception ex)
+            {
+                ViewBag.DbStatus = $"Ошибка подключения: {ex.Message}";
+                _logger.LogError(ex, "Ошибка подключения к БД");
+            }
+
             return View();
         }
 
@@ -23,10 +55,10 @@ namespace Library2.Controllers
             return View();
         }
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+        // Простой тестовый метод
+        public IActionResult Test()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return Content("HomeController работает!");
         }
     }
 }

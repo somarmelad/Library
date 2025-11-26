@@ -1,0 +1,56 @@
+﻿@model IEnumerable<Library2.Models.BookLoan>
+
+@{
+    ViewData["Title"] = "Выдачи книг";
+}
+
+<h1>Выдачи книг</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Новая выдача</a>
+</p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Книга</th>
+            <th>Читатель</th>
+            <th>Сотрудник</th>
+            <th>Дата выдачи</th>
+            <th>Дата возврата</th>
+            <th>Статус</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Book.Title</td>
+                <td>@item.Reader.LastName @item.Reader.FirstName</td>
+                <td>@item.Employee.LastName @item.Employee.FirstName</td>
+                <td>@item.LoanDate.ToString("dd.MM.yyyy")</td>
+                <td>@item.ReturnDate?.ToString("dd.MM.yyyy")</td>
+                <td>
+                    @if (item.ReturnDate.HasValue)
+                    {
+                        <span class="badge bg-success">Возвращена</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning">На руках</span>
+                    }
+                </td>
+                <td>
+                    @if (!item.ReturnDate.HasValue)
+                    {
+                        <form asp-action="Return" method="post">
+                            <input type="hidden" name="id" value="@item.IdBookLoan" />
+                            <button type="submit" class="btn btn-success btn-sm">Принять возврат</button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
