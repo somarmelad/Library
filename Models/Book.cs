@@ -1,4 +1,5 @@
-﻿using System;
+﻿// Models/Book.cs
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -10,22 +11,29 @@ namespace Library2.Models
         [Key]
         public int IdBook { get; set; }
 
-        [Required]
-        [StringLength(45)]
+        [Required(ErrorMessage = "Название обязательно")]
+        [StringLength(45, ErrorMessage = "Название не длиннее 45 символов")]
         public string Title { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Издатель обязателен")]
         public int PublisherId { get; set; }
 
-        [Required]
+        // Основной автор (single FK)
+        [Required(ErrorMessage = "Основной автор обязателен")]
+        public int AuthorId { get; set; }
 
+        [Required(ErrorMessage = "Количество обязательно")]
+        [Range(1, int.MaxValue, ErrorMessage = "Количество должно быть больше 0")]
         public int Quantity { get; set; }
-        [Range(1, int.MaxValue, ErrorMessage = "Количество должно быть > 0")]
+
         // Навигационные свойства
         [ForeignKey("PublisherId")]
         public virtual Publisher Publisher { get; set; }
 
-        // Связи многие-ко-многим
+        [ForeignKey("AuthorId")]
+        public virtual Author Author { get; set; }
+
+        // Many-to-many связи (дополнительные авторы и жанры)
         public virtual ICollection<BookAuthor> BookAuthors { get; set; } = new List<BookAuthor>();
         public virtual ICollection<BookGenre> BookGenres { get; set; } = new List<BookGenre>();
         public virtual ICollection<BookLoan> BookLoans { get; set; } = new List<BookLoan>();

@@ -2,47 +2,66 @@
 @{
     ViewData["Title"] = "Добавить книгу";
 }
+
 <h1>Добавить книгу</h1>
+
 <div class="row">
-    <div class="col-md-6">
-        <form asp-action="Create">
+    <div class="col-md-8">
+        <form asp-action="Create" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <!-- Название книги -->
             <div class="form-group mb-3">
-                <label asp-for="Title" class="control-label"></label>
+                <label asp-for="Title" class="control-label">Название книги *</label>
                 <input asp-for="Title" class="form-control" />
                 <span asp-validation-for="Title" class="text-danger"></span>
             </div>
+
+            <!-- Издательство -->
             <div class="form-group mb-3">
-                <label asp-for="PublisherId" class="control-label"></label>
+                <label asp-for="PublisherId" class="control-label">Издательство *</label>
                 <select asp-for="PublisherId" class="form-control" asp-items="@ViewBag.Publishers">
                     <option value="">-- Выберите издательство --</option>
                 </select>
                 <span asp-validation-for="PublisherId" class="text-danger"></span>
             </div>
+
+            <!-- Основной автор -->
             <div class="form-group mb-3">
-                <label asp-for="Quantity" class="control-label"></label>
-                <input asp-for="Quantity" class="form-control" />
+                <label asp-for="AuthorId" class="control-label">Основной автор *</label>
+                <select asp-for="AuthorId" class="form-control" asp-items="@ViewBag.Authors">
+                    <option value="">-- Выберите автора --</option>
+                </select>
+                <span asp-validation-for="AuthorId" class="text-danger"></span>
+            </div>
+
+            <!-- Количество -->
+            <div class="form-group mb-3">
+                <label asp-for="Quantity" class="control-label">Количество *</label>
+                <input asp-for="Quantity" class="form-control" type="number" min="1" />
                 <span asp-validation-for="Quantity" class="text-danger"></span>
             </div>
+
+            <!-- Жанры (множественный выбор) -->
             <div class="form-group mb-3">
-                <label class="control-label">Авторы (выберите несколько, удерживая Ctrl)</label>
-                <select multiple="multiple" name="selectedAuthors" asp-items="@ViewBag.Authors" class="form-control" size="5">
-                    <option value="">-- Выберите авторов --</option>
+                <label class="control-label">Жанры</label>
+                <select multiple="multiple" name="selectedGenres"
+                        class="form-control" size="6" asp-items="@ViewBag.Genres">
+                    <option value="">-- Выберите жанры (Ctrl+клик для множественного выбора) --</option>
                 </select>
+                <small class="form-text text-muted">
+                    Зажмите Ctrl и кликайте для выбора нескольких жанров
+                </small>
             </div>
-            <div class="form-group mb-3">
-                <label class="control-label">Жанры (выберите несколько, удерживая Ctrl)</label>
-                <select multiple="multiple" name="selectedGenres" asp-items="@ViewBag.Genres" class="form-control" size="5">
-                    <option value="">-- Выберите жанры --</option>
-                </select>
-            </div>
+
             <div class="form-group">
-                <button type="submit" class="btn btn-primary">Добавить</button>
+                <input type="submit" value="Добавить книгу" class="btn btn-primary" />
                 <a asp-action="Index" class="btn btn-secondary">Отмена</a>
             </div>
         </form>
     </div>
 </div>
+
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
