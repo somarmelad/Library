@@ -1,0 +1,46 @@
+﻿@model Library2.Models.Book
+@{
+    ViewData["Title"] = "Удалить книгу";
+}
+
+<h1>Удалить</h1>
+
+<h3>Вы уверены, что хотите удалить эту книгу?</h3>
+
+<div>
+    <h4>@Model.Title</h4>
+    <hr />
+    <dl class="row">
+        
+        <dt class="col-sm-3">Название</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.Title)</dd>
+        
+        <dt class="col-sm-3">Издательство</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.Publisher.Name)</dd>
+
+        <dt class="col-sm-3">Количество</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.Quantity)</dd>
+        
+        <dt class="col-sm-3">Авторы</dt>
+        <dd class="col-sm-9">
+            @{
+                var authors = Model.BookAuthors.Select(ba => ba.Author.FullName);
+            }
+            @string.Join(", ", authors)
+        </dd>
+
+        <dt class="col-sm-3">Жанры</dt>
+        <dd class="col-sm-9">
+            @{
+                var genres = Model.BookGenres.Select(bg => bg.Genre.Name);
+            }
+            @string.Join(", ", genres)
+        </dd>
+    </dl>
+    
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="IdBook" />
+        <button type="submit" class="btn btn-danger">Удалить</button>
+        <a asp-action="Index" class="btn btn-secondary">Отмена</a>
+    </form>
+</div>

@@ -1,0 +1,60 @@
+﻿@model Library2.Models.Book
+@{
+    ViewData["Title"] = "Подробности о книге";
+}
+
+<h1>Подробности</h1>
+<hr />
+
+<div>
+    <h4>@Model.Title</h4>
+    <dl class="row">
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.Title)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.Title)
+        </dd>
+
+        <dt class="col-sm-3">
+            Издательство
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.Publisher.Name)
+        </dd>
+
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.Quantity)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.Quantity)
+        </dd>
+
+        <dt class="col-sm-3">
+            Авторы
+        </dt>
+        <dd class="col-sm-9">
+            @{
+            var authors = Model.BookAuthors.Select(ba => ba.Author.FullName);
+            }
+            @string.Join(", ", authors)
+        </dd>
+
+        <dt class="col-sm-3">
+            Жанры
+        </dt>
+        <dd class="col-sm-9">
+            @{
+            var genres = Model.BookGenres.Select(bg => bg.Genre.Name);
+            }
+            @string.Join(", ", genres)
+        </dd>
+
+        @* Добавьте здесь отображение BookLoans, если это необходимо *
+    </dl>
+</div>
+
+<div>
+    <a asp-action="Edit" asp-route-id="@Model.IdBook" class="btn btn-warning">Редактировать</a> |
+    <a asp-action="Index" class="btn btn-secondary">Вернуться к списку</a>
+</div>

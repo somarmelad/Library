@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Library2.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class FixedManyToMany : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -21,11 +21,11 @@ namespace Library2.Migrations
                 {
                     IdAuthor = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    LastName = table.Column<string>(type: "varchar(45)", maxLength: 45, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
                     FirstName = table.Column<string>(type: "varchar(45)", maxLength: 45, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    MiddleName = table.Column<string>(type: "varchar(45)", maxLength: 45, nullable: false)
+                    LastName = table.Column<string>(type: "varchar(45)", maxLength: 45, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    MiddleName = table.Column<string>(type: "varchar(45)", maxLength: 45, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4")
                 },
                 constraints: table =>
@@ -137,8 +137,7 @@ namespace Library2.Migrations
                 columns: table => new
                 {
                     BookId = table.Column<int>(type: "int", nullable: false),
-                    AuthorId = table.Column<int>(type: "int", nullable: false),
-                    ShelfId = table.Column<int>(type: "int", nullable: true)
+                    AuthorId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -155,11 +154,6 @@ namespace Library2.Migrations
                         principalTable: "Books",
                         principalColumn: "IdBook",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_BookAuthors_Books_ShelfId",
-                        column: x => x.ShelfId,
-                        principalTable: "Books",
-                        principalColumn: "IdBook");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -228,11 +222,6 @@ namespace Library2.Migrations
                 name: "IX_BookAuthors_AuthorId",
                 table: "BookAuthors",
                 column: "AuthorId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_BookAuthors_ShelfId",
-                table: "BookAuthors",
-                column: "ShelfId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_BookGenres_GenreId",

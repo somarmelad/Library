@@ -41,7 +41,6 @@ namespace Library2.Migrations
                         .HasColumnType("varchar(45)");
 
                     b.Property<string>("MiddleName")
-                        .IsRequired()
                         .HasMaxLength(45)
                         .HasColumnType("varchar(45)");
 
@@ -58,9 +57,6 @@ namespace Library2.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IdBook"));
 
-                    b.Property<int>("AuthorId")
-                        .HasColumnType("int");
-
                     b.Property<int>("PublisherId")
                         .HasColumnType("int");
 
@@ -73,8 +69,6 @@ namespace Library2.Migrations
                         .HasColumnType("varchar(45)");
 
                     b.HasKey("IdBook");
-
-                    b.HasIndex("AuthorId");
 
                     b.HasIndex("PublisherId");
 
@@ -257,19 +251,11 @@ namespace Library2.Migrations
 
             modelBuilder.Entity("Library2.Models.Book", b =>
                 {
-                    b.HasOne("Library2.Models.Author", "Author")
-                        .WithMany()
-                        .HasForeignKey("AuthorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Library2.Models.Publisher", "Publisher")
                         .WithMany("Books")
                         .HasForeignKey("PublisherId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Author");
 
                     b.Navigation("Publisher");
                 });

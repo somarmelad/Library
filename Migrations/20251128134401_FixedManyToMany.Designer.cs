@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Library2.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251120182234_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20251128134401_FixedManyToMany")]
+    partial class FixedManyToMany
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -44,7 +44,6 @@ namespace Library2.Migrations
                         .HasColumnType("varchar(45)");
 
                     b.Property<string>("MiddleName")
-                        .IsRequired()
                         .HasMaxLength(45)
                         .HasColumnType("varchar(45)");
 
@@ -87,14 +86,9 @@ namespace Library2.Migrations
                     b.Property<int>("AuthorId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ShelfId")
-                        .HasColumnType("int");
-
                     b.HasKey("BookId", "AuthorId");
 
                     b.HasIndex("AuthorId");
-
-                    b.HasIndex("ShelfId");
 
                     b.ToTable("BookAuthors");
                 });
@@ -278,14 +272,10 @@ namespace Library2.Migrations
                         .IsRequired();
 
                     b.HasOne("Library2.Models.Book", "Book")
-                        .WithMany()
+                        .WithMany("BookAuthors")
                         .HasForeignKey("BookId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("Library2.Models.Book", null)
-                        .WithMany("BookAuthors")
-                        .HasForeignKey("ShelfId");
 
                     b.Navigation("Author");
 
