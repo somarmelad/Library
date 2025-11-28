@@ -23,10 +23,10 @@ namespace Library2.Models
 
         [Required(ErrorMessage = "Количество обязательно")]
         [Range(1, int.MaxValue, ErrorMessage = "Количество должно быть > 0")]
-        public int Quantity { get; set; }
+        public int Quantity { get; set; } = 1;
 
         // Навигационные свойства
-       
+
 
         // Many-to-many связи
         public virtual ICollection<BookAuthor> BookAuthors { get; set; } = new List<BookAuthor>();

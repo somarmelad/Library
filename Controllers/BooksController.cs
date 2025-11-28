@@ -33,7 +33,7 @@ namespace Library2.Controllers
             return View(books);
         }
 
-        // GET: Books/Details/5
+        // GET: Books/Details
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -202,7 +202,7 @@ namespace Library2.Controllers
             return View(book);
         }
 
-        // POST: Books/Edit/5
+        // POST: Books/Edit
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Book book, List<int> selectedAuthors, List<int> selectedGenres)
@@ -304,7 +304,7 @@ namespace Library2.Controllers
             return View(book);
         }
 
-        // POST: Books/Delete/5
+        // POST: Books/Delete
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -317,6 +317,110 @@ namespace Library2.Controllers
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+
+        // POST: Books/CreatePublisherAjax
+        [HttpPost]
+        public async Task<IActionResult> CreatePublisherAjax(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return Json(new { success = false, message = "Имя издателя не может быть пустым." });
+            }
+
+            // Создаем новый объект Publisher (предполагая, что модель Publisher имеет свойство Name)
+            var publisher = new Publisher { Name = name };
+
+            try
+            {
+                _context.Publishers.Add(publisher);
+                await _context.SaveChangesAsync();
+
+                // Возвращаем успех и данные нового издателя (ID и Name)
+                return Json(new
+                {
+                    success = true,
+                    id = publisher.IdPublisher,
+                    name = publisher.Name
+                });
+            }
+            catch (Exception ex)
+            {
+                // Логирование ошибки
+                return Json(new { success = false, message = "Ошибка при сохранении издателя: " + ex.Message });
+            }
+        }
+
+
+
+        // POST: Books/CreateAuthorAjax
+        [HttpPost]
+        public async Task<IActionResult> CreateAuthorAjax(string firstName, string lastName, string middleName)
+        {
+            string finalMiddleName = string.IsNullOrWhiteSpace(middleName) ? null : middleName;
+
+            var author = new Author
+            {
+                FirstName = firstName,
+                LastName = lastName,
+                MiddleName = finalMiddleName // <-- Используем null или введенное значение
+            };
+
+            try
+            {
+                _context.Authors.Add(author);
+                await _context.SaveChangesAsync();
+
+                // ... Возвращаем успех ...
+                return Json(new
+                {
+                    success = true,
+                    id = author.IdAuthor,
+                    // Используем Author.FullName, который должен быть корректно реализован 
+                    fullName = author.FullName
+                });
+            }
+            catch (Exception ex)
+            {
+                // ... Логирование ...
+                string innerError = ex.InnerException?.Message ?? ex.Message;
+                Console.WriteLine("Ошибка сохранения автора: " + innerError);
+
+                return Json(new { success = false, message = "Ошибка при сохранении автора: " + innerError });
+            }
+        }
+
+
+        // POST: Books/CreateGenreAjax
+        [HttpPost]
+        public async Task<IActionResult> CreateGenreAjax(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return Json(new { success = false, message = "Название жанра не может быть пустым." });
+            }
+
+            // Создаем новый объект Genre (предполагая, что модель Genre имеет свойство Name и IdGenre)
+            var genre = new Genre { Name = name };
+
+            try
+            {
+                _context.Genres.Add(genre);
+                await _context.SaveChangesAsync();
+
+                // Возвращаем успех и данные нового жанра
+                return Json(new
+                {
+                    success = true,
+                    id = genre.IdGenre,
+                    name = genre.Name
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Ошибка при сохранении жанра: " + ex.Message });
+            }
         }
 
 

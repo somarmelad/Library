@@ -19,13 +19,15 @@
                 <span asp-validation-for="Title" class="text-danger"></span>
             </div>
 
-            <div class="form-group mb-3">
-                <label asp-for="PublisherId" class="control-label"></label>
-                <select asp-for="PublisherId" class="form-control" asp-items="@ViewBag.Publishers">
-                    <option value="">-- Выберите издательство --</option>
-                </select>
-                <span asp-validation-for="PublisherId" class="text-danger"></span>
+            <div class="form-group mb-3 d-flex align-items-end">
+                <div class="flex-grow-1 me-2">
+                    <label asp-for="PublisherId" class="control-label"></label>
+                    <select asp-for="PublisherId" class="form-control" asp-items="@ViewBag.Publishers"></select>
+                    <span asp-validation-for="PublisherId" class="text-danger"></span>
+                </div>
+                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createPublisherModal" style="height: 38px;">+</button>
             </div>
+
 
             <div class="form-group mb-3">
                 <label asp-for="Quantity" class="control-label"></label>
@@ -33,18 +35,20 @@
                 <span asp-validation-for="Quantity" class="text-danger"></span>
             </div>
 
-            <div class="form-group mb-3">
-                <label class="control-label">Авторы (выберите одного или нескольких)</label>
-                <select multiple="multiple" name="selectedAuthors" asp-items="@ViewBag.Authors" class="form-control" size="5">
-                    <option value="">-- Выберите авторов --</option>
-                </select>
+            <div class="form-group mb-3 d-flex align-items-end">
+                <div class="flex-grow-1 me-2">
+                    <label class="control-label">Авторы</label>
+                    <select multiple="multiple" name="selectedAuthors" id="selectedAuthors" asp-items="@ViewBag.Authors" class="form-control" size="5"></select>
+                </div>
+                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createAuthorModal" style="height: 38px;">+</button>
             </div>
 
-            <div class="form-group mb-3">
-                <label class="control-label">Жанры (выберите один или несколько)</label>
-                <select multiple="multiple" name="selectedGenres" asp-items="@ViewBag.Genres" class="form-control" size="5">
-                    <option value="">-- Выберите жанры --</option>
-                </select>
+            <div class="form-group mb-3 d-flex align-items-end">
+                <div class="flex-grow-1 me-2">
+                    <label class="control-label">Жанры</label>
+                    <select multiple="multiple" name="selectedGenres" id="selectedGenres" asp-items="@ViewBag.Genres" class="form-control" size="5"></select>
+                </div>
+                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createGenreModal" style="height: 38px;">+</button>
             </div>
 
             <hr />
@@ -57,8 +61,245 @@
     </div>
 </div>
 
+@* Модальное окно для создания Издателя *@
+<div class="modal fade" id="createPublisherModal" tabindex="-1" aria-labelledby="createPublisherModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createPublisherModalLabel">Добавить новое издательство</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="publisherNameInput" class="form-label">Название издательства</label>
+                    <input type="text" class="form-control" id="publisherNameInput">
+                    <div class="text-danger mt-2" id="publisherError"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="savePublisherBtn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Модальное окно для создания Автора *@
+<div class="modal fade" id="createAuthorModal" tabindex="-1" aria-labelledby="createAuthorModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createAuthorModalLabel">Добавить нового автора</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="authorLastNameInput" class="form-label">Фамилия (Обязательно)</label>
+                    <input type="text" class="form-control" id="authorLastNameInput">
+                </div>
+                <div class="mb-3">
+                    <label for="authorFirstNameInput" class="form-label">Имя (Обязательно)</label>
+                    <input type="text" class="form-control" id="authorFirstNameInput">
+                </div>
+                <div class="mb-3">
+                    <label for="authorMiddleNameInput" class="form-label">Отчество (Необязательно)</label>
+                    <input type="text" class="form-control" id="authorMiddleNameInput">
+                </div>
+                <div class="text-danger mt-2" id="authorError"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="saveAuthorBtn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+@* Модальное окно для создания Жанра *@
+<div class="modal fade" id="createGenreModal" tabindex="-1" aria-labelledby="createGenreModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createGenreModalLabel">Добавить новый жанр</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="genreNameInput" class="form-label">Название жанра</label>
+                    <input type="text" class="form-control" id="genreNameInput">
+                    <div class="text-danger mt-2" id="genreError"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="saveGenreBtn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+    <script>
+        $(document).ready(function () {
+            // Убедитесь, что все SELECT-теги имеют ID:
+            // Издатель: #PublisherId
+            // Авторы: #selectedAuthors
+            // Жанры: #selectedGenres
+
+            var token = $('input[name="__RequestVerificationToken"]').val();
+
+            // =======================================================
+            // 1. ЛОГИКА ДЛЯ ИЗДАТЕЛЬСТВА (PUBLISHER)
+            // (Ваша рабочая логика)
+            // =======================================================
+            $("#savePublisherBtn").click(function () {
+                var name = $("#publisherNameInput").val();
+                $("#publisherError").text("");
+
+                if (name.trim() === "") {
+                    $("#publisherError").text("Пожалуйста, введите название.");
+                    return;
+                }
+
+                $.ajax({
+                    url: '@Url.Action("CreatePublisherAjax", "Books")',
+                    type: "POST",
+                    data: {
+                        name: name,
+                        __RequestVerificationToken: token
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            // Создаем опцию и сразу ее выбираем
+                            var newOption = new Option(response.name, response.id, true, true);
+                            $("#PublisherId").append(newOption).trigger('change');
+
+                            // Закрываем модальное окно и очищаем
+                            bootstrap.Modal.getInstance(document.getElementById('createPublisherModal')).hide();
+                            $("#publisherNameInput").val('');
+                        } else {
+                            $("#publisherError").text(response.message);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        $("#publisherError").text("Произошла ошибка сети/сервера: " + error);
+                    }
+                });
+            });
+
+
+            // =======================================================
+            // 2. ИСПРАВЛЕННАЯ ЛОГИКА ДЛЯ АВТОРОВ (AUTHOR)
+            // =======================================================
+            $("#saveAuthorBtn").click(function () {
+                var firstName = $("#authorFirstNameInput").val();
+                var lastName = $("#authorLastNameInput").val();
+                var middleName = $("#authorMiddleNameInput").val();
+
+                $("#authorError").text("");
+
+                if (firstName.trim() === "" || lastName.trim() === "") {
+                    $("#authorError").text("Имя и фамилия обязательны.");
+                    return;
+                }
+
+                $.ajax({
+                    url: '@Url.Action("CreateAuthorAjax", "Books")',
+                    type: "POST",
+                    data: {
+                        firstName: firstName,
+                        lastName: lastName,
+                        middleName: middleName,
+                        __RequestVerificationToken: token
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            var $select = $('#selectedAuthors');
+                            var newIdString = response.id.toString();
+
+                            // 1. Получаем текущие выбранные значения
+                            var currentSelected = $select.val() || [];
+
+                            // 2. Создаем и добавляем новую опцию в SELECT
+                            $select.append($('<option>', {
+                                value: newIdString,
+                                text: response.fullName
+                            }));
+
+                            // 3. Добавляем новый ID к массиву выбранных
+                            currentSelected.push(newIdString);
+
+                            // 4. Явно устанавливаем новое состояние выбора, чтобы обновить Multi-Select
+                            $select.val(currentSelected).trigger('change');
+
+                            // Закрываем модальное окно и очищаем
+                            bootstrap.Modal.getInstance(document.getElementById('createAuthorModal')).hide();
+                            $("#authorFirstNameInput").val('');
+                            $("#authorLastNameInput").val('');
+                            $("#authorMiddleNameInput").val('');
+                        } else {
+                            $("#authorError").text(response.message);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        $("#authorError").text("Произошла ошибка сети/сервера: " + error);
+                    }
+                });
+            });
+
+
+            // =======================================================
+            // 3. ИСПРАВЛЕННАЯ ЛОГИКА ДЛЯ ЖАНРОВ (GENRE)
+            // =======================================================
+            $("#saveGenreBtn").click(function () {
+                var name = $("#genreNameInput").val();
+                $("#genreError").text("");
+
+                if (name.trim() === "") {
+                    $("#genreError").text("Пожалуйста, введите название жанра.");
+                    return;
+                }
+
+                $.ajax({
+                    url: '@Url.Action("CreateGenreAjax", "Books")',
+                    type: "POST",
+                    data: {
+                        name: name,
+                        __RequestVerificationToken: token
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            var $select = $('#selectedGenres');
+                            var newIdString = response.id.toString();
+
+                            // 1. Получаем текущие выбранные значения
+                            var currentSelected = $select.val() || [];
+
+                            // 2. Создаем и добавляем новую опцию в SELECT
+                            $select.append($('<option>', {
+                                value: newIdString,
+                                text: response.name
+                            }));
+
+                            // 3. Добавляем новый ID к массиву выбранных
+                            currentSelected.push(newIdString);
+
+                            // 4. Явно устанавливаем новое состояние выбора
+                            $select.val(currentSelected).trigger('change');
+
+                            // Закрываем модальное окно и очищаем
+                            bootstrap.Modal.getInstance(document.getElementById('createGenreModal')).hide();
+                            $("#genreNameInput").val('');
+                        } else {
+                            $("#genreError").text(response.message);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        $("#genreError").text("Произошла ошибка сети/сервера: " + error);
+                    }
+                });
+            });
+        });
+    </script>
 }
