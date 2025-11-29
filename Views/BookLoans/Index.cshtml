@@ -1,54 +1,73 @@
 ﻿@model IEnumerable<Library2.Models.BookLoan>
-
 @{
-    ViewData["Title"] = "Выдачи книг";
+    ViewData["Title"] = "Выданные книги";
 }
 
-<h1>Выдачи книг</h1>
+<h1>Выданные книги</h1>
 
 <p>
-    <a asp-action="Create" class="btn btn-primary">Новая выдача</a>
+    <a asp-action="Create" class="btn btn-primary">Выдать новую книгу</a>
 </p>
 
-<table class="table table-striped">
+<table class="table">
     <thead>
         <tr>
-            <th>Книга</th>
-            <th>Читатель</th>
-            <th>Сотрудник</th>
-            <th>Дата выдачи</th>
-            <th>Дата возврата</th>
-            <th>Статус</th>
-            <th>Действия</th>
+            <th>
+                @Html.DisplayNameFor(model => model.Book.Title)
+            </th>
+            <th>
+                Читатель
+            </th>
+            <th>
+                Сотрудник
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.LoanDate)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ReturnDate)
+            </th>
+            <th>
+                Статус
+            </th>
+            <th></th>
         </tr>
     </thead>
     <tbody>
         @foreach (var item in Model)
         {
             <tr>
-                <td>@item.Book.Title</td>
-                <td>@item.Reader.LastName @item.Reader.FirstName</td>
-                <td>@item.Employee.LastName @item.Employee.FirstName</td>
-                <td>@item.LoanDate.ToString("dd.MM.yyyy")</td>
-                <td>@item.ReturnDate?.ToString("dd.MM.yyyy")</td>
                 <td>
-                    @if (item.ReturnDate.HasValue)
+                    @Html.DisplayFor(modelItem => item.Book.Title)
+                </td>
+                <td>
+                    @item.Reader.LastName @item.Reader.FirstName
+                </td>
+                <td>
+                    @item.Employee.LastName @item.Employee.FirstName
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.LoanDate)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.ReturnDate)
+                </td>
+                <td>
+                    @if (item.ReturnDate == null)
                     {
-                        <span class="badge bg-success">Возвращена</span>
+                        <span class="badge bg-danger">ВЫДАНА</span>
                     }
                     else
                     {
-                        <span class="badge bg-warning">На руках</span>
+                        <span class="badge bg-success">ВОЗВРАЩЕНА</span>
                     }
                 </td>
                 <td>
-                    @if (!item.ReturnDate.HasValue)
-                    {
-                        <form asp-action="Return" method="post">
-                            <input type="hidden" name="id" value="@item.IdBookLoan" />
-                            <button type="submit" class="btn btn-success btn-sm">Принять возврат</button>
-                        </form>
-                    }
+                    <a asp-action="Edit" asp-route-id="@item.IdBookLoan" class="btn btn-sm btn-secondary">
+                        @(item.ReturnDate == null ? "Возврат / Изменить" : "Изменить")
+                    </a>
+                    <a asp-action="Details" asp-route-id="@item.IdBookLoan" class="btn btn-sm btn-info">Подробнее</a>
+                    <a asp-action="Delete" asp-route-id="@item.IdBookLoan" class="btn btn-sm btn-danger">Удалить</a>
                 </td>
             </tr>
         }

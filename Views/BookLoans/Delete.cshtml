@@ -1,11 +1,13 @@
 ﻿@model Library2.Models.BookLoan
 @{
-    ViewData["Title"] = "Подробности выдачи";
+    ViewData["Title"] = "Удаление выдачи";
 }
 
-<h1>Подробности выдачи</h1>
+<h1>Удаление выдачи</h1>
 
+<h3>Вы уверены, что хотите удалить эту запись о выдаче?</h3>
 <div>
+    <h4>BookLoan</h4>
     <hr />
     <dl class="row">
         <dt class="col-sm-3">
@@ -19,12 +21,6 @@
         </dt>
         <dd class="col-sm-9">
             @Model.Reader.LastName @Model.Reader.FirstName @Model.Reader.MiddleName
-        </dd>
-        <dt class="col-sm-3">
-            Сотрудник (Выдавший)
-        </dt>
-        <dd class="col-sm-9">
-            @Model.Employee.LastName @Model.Employee.FirstName @Model.Employee.MiddleName
         </dd>
         <dt class="col-sm-3">
             Дата выдачи
@@ -46,8 +42,10 @@
             }
         </dd>
     </dl>
-</div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model.IdBookLoan" class="btn btn-secondary">Изменить</a> |
-    <a asp-action="Index" class="btn btn-light">Назад к списку</a>
+
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="IdBookLoan" />
+        <input type="submit" value="Удалить" class="btn btn-danger" /> |
+        <a asp-action="Index" class="btn btn-secondary">Назад к списку</a>
+    </form>
 </div>

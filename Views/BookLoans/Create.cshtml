@@ -9,32 +9,41 @@
     <div class="col-md-4">
         <form asp-action="Create">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <!-- Выбор книги -->
             <div class="form-group mb-3">
-                <label asp-for="BookId" class="control-label"></label>
+                <label asp-for="BookId" class="control-label">Книга</label>
                 <select asp-for="BookId" class="form-control" asp-items="@ViewBag.Books">
                     <option value="">-- Выберите книгу --</option>
                 </select>
                 <span asp-validation-for="BookId" class="text-danger"></span>
             </div>
+
+            <!-- Выбор читателя -->
             <div class="form-group mb-3">
-                <label asp-for="ReaderId" class="control-label"></label>
+                <label asp-for="ReaderId" class="control-label">Читатель</label>
                 <select asp-for="ReaderId" class="form-control" asp-items="@ViewBag.Readers">
                     <option value="">-- Выберите читателя --</option>
                 </select>
                 <span asp-validation-for="ReaderId" class="text-danger"></span>
             </div>
+
+            <!-- Выбор сотрудника -->
             <div class="form-group mb-3">
-                <label asp-for="EmployeeId" class="control-label"></label>
+                <label asp-for="EmployeeId" class="control-label">Сотрудник</label>
                 <select asp-for="EmployeeId" class="form-control" asp-items="@ViewBag.Employees">
                     <option value="">-- Выберите сотрудника --</option>
                 </select>
                 <span asp-validation-for="EmployeeId" class="text-danger"></span>
             </div>
+
+            <!-- Дата выдачи (с установкой текущей даты по умолчанию) -->
             <div class="form-group mb-3">
-                <label asp-for="LoanDate" class="control-label"></label>
-                <input asp-for="LoanDate" class="form-control" type="date" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                <label asp-for="LoanDate" class="control-label">Дата выдачи</label>
+                <input asp-for="LoanDate" class="form-control" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
                 <span asp-validation-for="LoanDate" class="text-danger"></span>
             </div>
+
             <div class="form-group">
                 <input type="submit" value="Выдать" class="btn btn-primary" />
                 <a asp-action="Index" class="btn btn-secondary">Отмена</a>

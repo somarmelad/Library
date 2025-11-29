@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering; // Для SelectList
-using Library2.Models;
-using Library2.Data;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
+using Library2.Data; 
+using Library2.Models;
 using System.Linq;
 using System.Threading.Tasks;
+using System;
+using System.Collections.Generic;
 
 namespace Library2.Controllers
 {
@@ -19,106 +19,310 @@ namespace Library2.Controllers
             _context = context;
         }
 
-        // GET: BookLoans
+        
+
+        private async Task PopulateDropdowns(int? bookId = null, int? readerId = null, int? employeeId = null)
+        {
+            var booksWithAvailability = await _context.Books
+                .Select(b => new
+                {
+                    b.IdBook,
+                    b.Title,
+                    b.Quantity,
+                    LoanedCount = b.BookLoans.Count(bl => bl.ReturnDate == null)
+                })
+                .ToListAsync();
+
+            var availableBooks = booksWithAvailability
+                .Where(b => b.Quantity > b.LoanedCount)
+                .Select(b => new
+                {
+                    b.IdBook,
+                    Text = $"{b.Title} (Доступно: {b.Quantity - b.LoanedCount})"
+                })
+                .OrderBy(b => b.Text)
+                .ToList();
+
+
+            ViewBag.Books = new SelectList(availableBooks, "IdBook", "Text", bookId);
+
+            
+            var readers = await _context.Readers
+                .Select(r => new
+                {
+                    r.IdReader,
+                    r.LastName,    
+                    r.FirstName,   
+                    FullName = $"{r.LastName} {r.FirstName} {r.MiddleName}"
+                })
+                .OrderBy(r => r.LastName)
+                .ToListAsync();
+            ViewBag.Readers = new SelectList(readers, "IdReader", "FullName", readerId);
+
+            var employees = await _context.Employees
+                .Select(e => new
+                {
+                    e.IdEmployee,
+                    e.LastName,    
+                    e.FirstName,   
+                    FullName = $"{e.LastName} {e.FirstName} {e.MiddleName}"
+                })
+        .OrderBy(e => e.LastName)
+        .ToListAsync();
+
+            ViewBag.Employees = new SelectList(employees, "IdEmployee", "FullName", employeeId);
+        }
+
+        // ---
+        // GET: BookLoans (Список всех выдач)
+        // ---
+
         public async Task<IActionResult> Index()
         {
-            var loans = await _context.BookLoans
-                .Include(bl => bl.Book)
-                .Include(bl => bl.Reader)
-                .Include(bl => bl.Employee)
+            
+            var bookLoans = await _context.BookLoans
+                .Include(b => b.Book)
+                .Include(b => b.Reader)
+                .Include(b => b.Employee)
+                .OrderByDescending(b => b.LoanDate)
                 .ToListAsync();
-            return View(loans);
+
+            return View(bookLoans);
         }
 
-        // GET: BookLoans/Create
-        public async Task<IActionResult> Create()
+        // ---
+        // GET: BookLoans/Details/5
+        // ---
+
+        public async Task<IActionResult> Details(int? id)
         {
-            // ИСПРАВЬ: Async ToList и SelectList (предполагая поля IdBook/Title для Book, IdReader/FullName для Reader, IdEmployee/Name для Employee)
-            ViewBag.Books = new SelectList(
-                await _context.Books.Where(b => b.Quantity > 0).ToListAsync(),
-                "IdBook", "Title");
-
-            ViewBag.Readers = new SelectList(
-                await _context.Readers.ToListAsync(),
-                "IdReader", "FullName"); // Замени "FullName" на реальное поле, если другое
-
-            ViewBag.Employees = new SelectList(
-                await _context.Employees.ToListAsync(),
-                "IdEmployee", "Name"); // Замени "Name" на реальное поле
-
-            return View(new BookLoan());
-        }
-
-        // POST: BookLoans/Create
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(BookLoan bookLoan)
-        {
-            if (ModelState.IsValid)
-            {
-                // Проверяем и уменьшаем количество
-                var book = await _context.Books.FindAsync(bookLoan.BookId);
-                if (book == null || book.Quantity <= 0)
-                {
-                    ModelState.AddModelError("BookId", "Книга недоступна или не существует.");
-                    await LoadViewBags(bookLoan.BookId, bookLoan.ReaderId, bookLoan.EmployeeId);
-                    return View(bookLoan);
-                }
-
-                book.Quantity--;
-                _context.Update(book);
-
-                bookLoan.LoanDate = DateTime.Now; // Установи дату выдачи, если не в модели
-                _context.Add(bookLoan);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-
-            // При ошибке: Перезагрузи ViewBag с выбранными значениями
-            await LoadViewBags(bookLoan.BookId, bookLoan.ReaderId, bookLoan.EmployeeId);
-            return View(bookLoan);
-        }
-
-        // POST: BookLoans/Return/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Return(int id)
-        {
-            var loan = await _context.BookLoans
-                .Include(bl => bl.Book)
-                .FirstOrDefaultAsync(bl => bl.IdBookLoan == id);
-
-            if (loan == null)
+            if (id == null)
             {
                 return NotFound();
             }
 
-            // Возвращаем книгу
-            loan.ReturnDate = DateTime.Now;
-            if (loan.Book != null)
+            var bookLoan = await _context.BookLoans
+                .Include(b => b.Book)
+                .Include(b => b.Reader)
+                .Include(b => b.Employee)
+                .FirstOrDefaultAsync(m => m.IdBookLoan == id);
+
+            if (bookLoan == null)
             {
-                loan.Book.Quantity++;
-                _context.Update(loan.Book);
+                return NotFound();
             }
-            _context.Update(loan);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+
+            return View(bookLoan);
         }
 
-        // Вспомогательный метод для загрузки ViewBag (используется в Create POST)
-        private async Task LoadViewBags(int? selectedBookId = null, int? selectedReaderId = null, int? selectedEmployeeId = null)
+        // ---
+        // GET: BookLoans/Create (Выдача книги)
+        // ---
+
+        public async Task<IActionResult> Create()
         {
-            ViewBag.Books = new SelectList(
-                await _context.Books.Where(b => b.Quantity > 0).ToListAsync(),
-                "IdBook", "Title", selectedBookId);
+            await PopulateDropdowns();
+            
+            return View(new BookLoan { LoanDate = DateTime.Today });
+        }
 
-            ViewBag.Readers = new SelectList(
-                await _context.Readers.ToListAsync(),
-                "IdReader", "FullName", selectedReaderId); // Замени "FullName" на реальное
+        // ---
+        // POST: BookLoans/Create
+        // ---
 
-            ViewBag.Employees = new SelectList(
-                await _context.Employees.ToListAsync(),
-                "IdEmployee", "Name", selectedEmployeeId); // Замени "Name" на реальное
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(BookLoan bookLoan)
+        {
+            
+            var book = await _context.Books
+                .Include(b => b.BookLoans)
+                .FirstOrDefaultAsync(b => b.IdBook == bookLoan.BookId);
+
+            if (book == null)
+            {
+                ModelState.AddModelError("BookId", "Выбранная книга не найдена.");
+            }
+            else
+            {
+                var loanedCount = book.BookLoans.Count(bl => bl.ReturnDate == null);
+                if (book.Quantity <= loanedCount)
+                {
+                    ModelState.AddModelError("BookId", "Нет доступных экземпляров выбранной книги.");
+                }
+            }
+            if (!ModelState.IsValid)
+            {
+                Console.WriteLine("ОШИБКИ VALIDATION:");
+                foreach (var modelStateEntry in ModelState.Where(e => e.Value.Errors.Any()))
+                {
+                    var key = modelStateEntry.Key;
+                    var errors = modelStateEntry.Value.Errors.Select(e => e.ErrorMessage).ToList();
+                    // Вывод в консоль или лог
+                    Console.WriteLine($"Поле: '{key}', Ошибка(и): {string.Join("; ", errors)}");
+                }
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    bookLoan.LoanDate = bookLoan.LoanDate.Date; 
+
+                    _context.Add(bookLoan);
+                    await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (DbUpdateException dbEx) 
+                {
+                    
+                    var innerMessage = dbEx.InnerException?.Message ?? dbEx.Message;
+                    ModelState.AddModelError("", $"Ошибка БД: {innerMessage}");
+                    Console.WriteLine($"Ошибка БД при сохранении: {innerMessage}");
+                }
+                catch (Exception ex)
+                {
+                    
+                    ModelState.AddModelError("", $"Ошибка при сохранении выдачи: {ex.Message}");
+                }
+            }
+
+            await PopulateDropdowns(bookLoan.BookId, bookLoan.ReaderId, bookLoan.EmployeeId);
+            return View(bookLoan);
+        }
+
+        // ---
+        // GET: BookLoans/Edit/5 (Изменение или Возврат)
+        // ---
+
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var bookLoan = await _context.BookLoans
+            .Include(b => b.Book)    
+            .Include(b => b.Reader)  
+            .Include(b => b.Employee)
+            .FirstOrDefaultAsync(m => m.IdBookLoan == id);
+            if (bookLoan == null)
+            {
+                return NotFound();
+            }
+
+            // Для редактирования нам нужно показать все книги, включая ту, которая уже выдана
+            var books = await _context.Books
+                .Select(b => new
+                {
+                    b.IdBook,
+                    Text = b.Title
+                })
+                .OrderBy(b => b.Text)
+                .ToListAsync();
+
+            ViewBag.Books = new SelectList(books, "IdBook", "Text", bookLoan.BookId);
+
+            // Читатели и сотрудники
+            await PopulateDropdowns(bookLoan.BookId, bookLoan.ReaderId, bookLoan.EmployeeId);
+
+            return View(bookLoan);
+        }
+
+        // ---
+        // POST: BookLoans/Edit/5
+        // ---
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, BookLoan bookLoan)
+        {
+            if (id != bookLoan.IdBookLoan)
+            {
+                return NotFound();
+            }
+
+            // Если ReturnDate была установлена пользователем, нужно убедиться, что она не раньше LoanDate
+            if (bookLoan.ReturnDate.HasValue && bookLoan.ReturnDate.Value.Date < bookLoan.LoanDate.Date)
+            {
+                ModelState.AddModelError("ReturnDate", "Дата возврата не может быть раньше даты выдачи.");
+            }
+
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    bookLoan.LoanDate = bookLoan.LoanDate.Date;
+                    if (bookLoan.ReturnDate.HasValue)
+                    {
+                        bookLoan.ReturnDate = bookLoan.ReturnDate.Value.Date;
+                    }
+
+                    _context.Update(bookLoan);
+                    await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!_context.BookLoans.Any(e => e.IdBookLoan == bookLoan.IdBookLoan))
+                    {
+                        return NotFound();
+                    }
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    ModelState.AddModelError("", $"Ошибка при обновлении выдачи: {ex.Message}");
+                }
+            }
+
+            // В случае ошибки возвращаем представление с заполненными DropDowns
+            await PopulateDropdowns(bookLoan.BookId, bookLoan.ReaderId, bookLoan.EmployeeId);
+            return View(bookLoan);
+        }
+
+        // ---
+        // GET: BookLoans/Delete/5
+        // ---
+
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var bookLoan = await _context.BookLoans
+                .Include(b => b.Book)
+                .Include(b => b.Reader)
+                .Include(b => b.Employee)
+                .FirstOrDefaultAsync(m => m.IdBookLoan == id);
+
+            if (bookLoan == null)
+            {
+                return NotFound();
+            }
+
+            return View(bookLoan);
+        }
+
+        // ---
+        // POST: BookLoans/Delete/5
+        // ---
+
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var bookLoan = await _context.BookLoans.FindAsync(id);
+            if (bookLoan != null)
+            {
+                _context.BookLoans.Remove(bookLoan);
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction(nameof(Index));
         }
     }
 }
