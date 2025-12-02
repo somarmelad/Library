@@ -138,6 +138,13 @@ namespace Library2.Controllers
                 return NotFound();
             }
 
+            int activeLoansCount = reader.BookLoans.Count(bl => bl.ReturnDate == null);
+
+            if (activeLoansCount > 0)
+            {
+                ViewData["ActiveLoansError"] = $"Невозможно удалить читателя. У него на руках {activeLoansCount} невозвращенная(ые) книга(и).";
+            }
+
             return View(reader);
         }
 
@@ -146,16 +153,26 @@ namespace Library2.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            // Удаляем связанные BookLoans перед удалением Reader (чтобы избежать FK-ошибки)
-            var bookLoans = _context.BookLoans.Where(bl => bl.ReaderId == id); // Предполагая ReaderId в BookLoan
+            var reader = await _context.Readers.FindAsync(id);
+            if (reader == null)
+            {
+                return NotFound();
+            }
+
+            if (reader.BookLoans.Any(bl => bl.ReturnDate == null))
+            {
+
+                int activeLoansCount = reader.BookLoans.Count(bl => bl.ReturnDate == null);
+                TempData["ActiveLoansError"] = $"Не удалось удалить. У читателя {activeLoansCount} активная(ые) выдача(и).";
+                return RedirectToAction(nameof(Delete), new { id = id });
+            }
+
+            var bookLoans = _context.BookLoans.Where(bl => bl.ReaderId == id);
             _context.BookLoans.RemoveRange(bookLoans);
 
-            var reader = await _context.Readers.FindAsync(id);
-            if (reader != null)
-            {
-                _context.Readers.Remove(reader);
-                await _context.SaveChangesAsync();
-            }
+            
+            _context.Readers.Remove(reader);
+            await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Index));
         }

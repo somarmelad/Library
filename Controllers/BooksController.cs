@@ -42,12 +42,14 @@ namespace Library2.Controllers
             }
             var book = await _context.Books
                 .Include(b => b.Publisher)
+                // Annotation загружается автоматически, как и Title, Quantity и т.д.
                 .Include(b => b.BookAuthors)
                     .ThenInclude(ba => ba.Author)
                 .Include(b => b.BookGenres)
                     .ThenInclude(bg => bg.Genre)
                 .Include(b => b.BookLoans)
                 .FirstOrDefaultAsync(m => m.IdBook == id);
+
             if (book == null)
             {
                 return NotFound();
@@ -80,7 +82,7 @@ namespace Library2.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Book book, List<int> selectedAuthors, List<int> selectedGenres)
         {
-            
+
             if (selectedAuthors == null || selectedAuthors.Count == 0)
             {
                 ModelState.AddModelError("selectedAuthors", "Выберите хотя бы одного автора.");
@@ -90,19 +92,7 @@ namespace Library2.Controllers
                 ModelState.AddModelError("selectedGenres", "Выберите хотя бы один жанр.");
             }
 
-            if (!ModelState.IsValid)
-            {
-                Console.WriteLine("ModelState не валиден. Обнаружены следующие ошибки:");
-                foreach (var entry in ModelState.Where(e => e.Value.Errors.Count > 0))
-                {
-                    Console.WriteLine($"Поле: {entry.Key}");
-                    foreach (var error in entry.Value.Errors)
-                    {
-                        Console.WriteLine($"- Ошибка: {error.ErrorMessage}");
-                    }
-                }
-            }
-
+            // Annotation будет привязана к свойству book.Annotation автоматически
 
             if (ModelState.IsValid)
             {
@@ -132,7 +122,7 @@ namespace Library2.Controllers
                 }
                 catch (DbUpdateException dbEx)
                 {
-                    
+
                     Console.WriteLine("Ошибка сохранения БД: " + dbEx.InnerException?.Message ?? dbEx.Message);
                     ModelState.AddModelError("", "Ошибка сохранения книги в базу данных. Проверьте, существует ли выбранный Издатель.");
                 }
@@ -143,8 +133,7 @@ namespace Library2.Controllers
                 }
             }
 
-            
-
+            // При ошибке возвращаем те же списки для ViewBag, сохраняя выбранные значения
             ViewBag.Publishers = new SelectList(await _context.Publishers.ToListAsync(), "IdPublisher", "Name", book.PublisherId);
 
             var authorsList = await _context.Authors
@@ -183,8 +172,10 @@ namespace Library2.Controllers
                 return NotFound();
             }
 
+            // Установка ViewBag для выпадающих списков
             ViewBag.Publishers = new SelectList(await _context.Publishers.ToListAsync(), "IdPublisher", "Name", book.PublisherId);
 
+            // Установка ViewBag для авторов
             var authorsList = await _context.Authors
                 .Select(a => new SelectListItem
                 {
@@ -196,6 +187,7 @@ namespace Library2.Controllers
             var currentAuthorIds = book.BookAuthors.Select(ba => ba.AuthorId).ToList();
             ViewBag.Authors = new MultiSelectList(authorsList, "Value", "Text", currentAuthorIds);
 
+            // Установка ViewBag для жанров
             var currentGenreIds = book.BookGenres.Select(bg => bg.GenreId).ToList();
             ViewBag.Genres = new MultiSelectList(await _context.Genres.ToListAsync(), "IdGenre", "Name", currentGenreIds);
 
@@ -223,30 +215,44 @@ namespace Library2.Controllers
 
             if (ModelState.IsValid)
             {
+                // Загружаем существующую книгу с текущими связями.
+                var bookToUpdate = await _context.Books
+                    .Include(b => b.BookAuthors)
+                    .Include(b => b.BookGenres)
+                    .AsNoTracking() // Важно, чтобы избежать конфликтов отслеживания
+                    .FirstOrDefaultAsync(m => m.IdBook == book.IdBook);
+
+                if (bookToUpdate == null) return NotFound();
+
                 try
                 {
+                    // 1. Обновляем основные свойства (включая Title, Quantity, PublisherId, и АННОТАЦИЮ)
                     _context.Update(book);
 
-                    var bookToUpdate = await _context.Books
-                        .Include(b => b.BookAuthors)
-                        .Include(b => b.BookGenres)
-                        .FirstOrDefaultAsync(m => m.IdBook == book.IdBook);
+                    // 2. Управление авторами (Многий-ко-многим)
+                    // Удаляем все старые связи
+                    var oldAuthors = _context.BookAuthors.Where(ba => ba.BookId == book.IdBook);
+                    _context.BookAuthors.RemoveRange(oldAuthors);
 
-                    if (bookToUpdate == null) return NotFound();
-                    _context.BookAuthors.RemoveRange(bookToUpdate.BookAuthors);
+                    // Добавляем новые связи
                     foreach (var authorId in selectedAuthors)
                     {
-                        bookToUpdate.BookAuthors.Add(new BookAuthor { BookId = book.IdBook, AuthorId = authorId });
+                        _context.BookAuthors.Add(new BookAuthor { BookId = book.IdBook, AuthorId = authorId });
                     }
 
-                    _context.BookGenres.RemoveRange(bookToUpdate.BookGenres);
+                    // 3. Управление жанрами (Многий-ко-многим)
+                    // Удаляем все старые связи
+                    var oldGenres = _context.BookGenres.Where(bg => bg.BookId == book.IdBook);
+                    _context.BookGenres.RemoveRange(oldGenres);
 
+                    // Добавляем новые связи
                     foreach (var genreId in selectedGenres)
                     {
-                        bookToUpdate.BookGenres.Add(new BookGenre { BookId = book.IdBook, GenreId = genreId });
+                        _context.BookGenres.Add(new BookGenre { BookId = book.IdBook, GenreId = genreId });
                     }
 
                     await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -259,10 +265,10 @@ namespace Library2.Controllers
                 catch (Exception ex)
                 {
                     ModelState.AddModelError("", "Ошибка сохранения: " + ex.Message);
-                    
                 }
-                return RedirectToAction(nameof(Index));
             }
+
+            // При ошибке возвращаем те же списки для ViewBag, сохраняя выбранные значения
             ViewBag.Publishers = new SelectList(await _context.Publishers.ToListAsync(), "IdPublisher", "Name", book.PublisherId);
 
             var authorsList = await _context.Authors
@@ -322,6 +328,7 @@ namespace Library2.Controllers
 
         // POST: Books/CreatePublisherAjax
         [HttpPost]
+        [ValidateAntiForgeryToken] // Добавил [ValidateAntiForgeryToken] для безопасности
         public async Task<IActionResult> CreatePublisherAjax(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -329,15 +336,19 @@ namespace Library2.Controllers
                 return Json(new { success = false, message = "Имя издателя не может быть пустым." });
             }
 
-            // Создаем новый объект Publisher (предполагая, что модель Publisher имеет свойство Name)
-            var publisher = new Publisher { Name = name };
+            // Проверка на существование
+            if (await _context.Publishers.AnyAsync(p => p.Name.ToLower() == name.Trim().ToLower()))
+            {
+                return Json(new { success = false, message = $"Издательство '{name}' уже существует." });
+            }
+
+            var publisher = new Publisher { Name = name.Trim() };
 
             try
             {
                 _context.Publishers.Add(publisher);
                 await _context.SaveChangesAsync();
 
-                // Возвращаем успех и данные нового издателя (ID и Name)
                 return Json(new
                 {
                     success = true,
@@ -353,18 +364,36 @@ namespace Library2.Controllers
         }
 
 
-
         // POST: Books/CreateAuthorAjax
         [HttpPost]
+        [ValidateAntiForgeryToken] // Добавил [ValidateAntiForgeryToken] для безопасности
         public async Task<IActionResult> CreateAuthorAjax(string firstName, string lastName, string middleName)
         {
-            string finalMiddleName = string.IsNullOrWhiteSpace(middleName) ? null : middleName;
+            if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
+            {
+                return Json(new { success = false, message = "Имя и фамилия обязательны." });
+            }
+
+            string finalMiddleName = string.IsNullOrWhiteSpace(middleName) ? null : middleName.Trim();
+
+            // Проверка на существование дубликата
+            bool exists = await _context.Authors.AnyAsync(a =>
+                a.FirstName.ToLower() == firstName.Trim().ToLower() &&
+                a.LastName.ToLower() == lastName.Trim().ToLower() &&
+                (finalMiddleName == null ? a.MiddleName == null : a.MiddleName.ToLower() == finalMiddleName.ToLower())
+            );
+
+            if (exists)
+            {
+                return Json(new { success = false, message = "Автор с таким именем уже существует." });
+            }
+
 
             var author = new Author
             {
-                FirstName = firstName,
-                LastName = lastName,
-                MiddleName = finalMiddleName // <-- Используем null или введенное значение
+                FirstName = firstName.Trim(),
+                LastName = lastName.Trim(),
+                MiddleName = finalMiddleName
             };
 
             try
@@ -372,18 +401,23 @@ namespace Library2.Controllers
                 _context.Authors.Add(author);
                 await _context.SaveChangesAsync();
 
-                // ... Возвращаем успех ...
+                // Предполагается, что в модели Author есть свойство FullName, которое возвращает ФИО
+                // Если его нет, вам нужно будет создать эту строку здесь
+                string fullName = $"{author.FirstName} {author.LastName}";
+                if (!string.IsNullOrEmpty(author.MiddleName))
+                {
+                    fullName += $" {author.MiddleName}";
+                }
+
                 return Json(new
                 {
                     success = true,
                     id = author.IdAuthor,
-                    // Используем Author.FullName, который должен быть корректно реализован 
-                    fullName = author.FullName
+                    fullName = fullName
                 });
             }
             catch (Exception ex)
             {
-                // ... Логирование ...
                 string innerError = ex.InnerException?.Message ?? ex.Message;
                 Console.WriteLine("Ошибка сохранения автора: " + innerError);
 
@@ -394,6 +428,7 @@ namespace Library2.Controllers
 
         // POST: Books/CreateGenreAjax
         [HttpPost]
+        [ValidateAntiForgeryToken] // Добавил [ValidateAntiForgeryToken] для безопасности
         public async Task<IActionResult> CreateGenreAjax(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -401,15 +436,19 @@ namespace Library2.Controllers
                 return Json(new { success = false, message = "Название жанра не может быть пустым." });
             }
 
-            // Создаем новый объект Genre (предполагая, что модель Genre имеет свойство Name и IdGenre)
-            var genre = new Genre { Name = name };
+            // Проверка на существование
+            if (await _context.Genres.AnyAsync(g => g.Name.ToLower() == name.Trim().ToLower()))
+            {
+                return Json(new { success = false, message = $"Жанр '{name}' уже существует." });
+            }
+
+            var genre = new Genre { Name = name.Trim() };
 
             try
             {
                 _context.Genres.Add(genre);
                 await _context.SaveChangesAsync();
 
-                // Возвращаем успех и данные нового жанра
                 return Json(new
                 {
                     success = true,
@@ -422,8 +461,5 @@ namespace Library2.Controllers
                 return Json(new { success = false, message = "Ошибка при сохранении жанра: " + ex.Message });
             }
         }
-
-
     }
-
 }

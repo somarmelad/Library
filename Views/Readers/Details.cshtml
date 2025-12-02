@@ -1,0 +1,77 @@
+﻿@model Library2.Models.Reader
+
+@{
+    ViewData["Title"] = "Детали читателя";
+}
+
+<h1>Детали читателя</h1>
+
+<div>
+    <h4>@Model.LastName @Model.FirstName @Model.MiddleName</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">
+            Фамилия
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.LastName)
+        </dd>
+        <dt class="col-sm-3">
+            Имя
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.FirstName)
+        </dd>
+        <dt class="col-sm-3">
+            Отчество
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.MiddleName)
+        </dd>
+    </dl>
+
+    <h3>История выдач</h3>
+    @if (Model.BookLoans != null && Model.BookLoans.Any())
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Название книги</th>
+                    <th>Дата выдачи</th>
+                    <th>Дата возврата</th>
+                    <th>Статус</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var loan in Model.BookLoans.OrderByDescending(bl => bl.LoanDate))
+                {
+                    <tr>
+                        <td>@loan.Book.Title</td>
+                        <td>@loan.LoanDate.ToShortDateString()</td>
+                        <td>
+                            @if (loan.ReturnDate.HasValue)
+                            {
+                                @loan.ReturnDate.Value.ToShortDateString()
+                            }
+                            else
+                            {
+                                <span class="text-danger">Не возвращена</span>
+                            }
+                        </td>
+                        <td>
+                            @(loan.ReturnDate.HasValue ? "Возвращена" : "На руках")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p>У этого читателя нет истории выдач.</p>
+    }
+</div>
+<div>
+    <a asp-action="Edit" asp-route-id="@Model.IdReader" class="btn btn-primary">Редактировать</a> |
+    <a asp-action="Index" class="btn btn-secondary">Назад к списку</a>
+</div>
