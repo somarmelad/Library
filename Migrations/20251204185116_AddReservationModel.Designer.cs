@@ -4,6 +4,7 @@ using Library2.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Library2.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251204185116_AddReservationModel")]
+    partial class AddReservationModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -252,40 +255,6 @@ namespace Library2.Migrations
                     b.ToTable("Readers");
                 });
 
-            modelBuilder.Entity("Library2.Models.Reservation", b =>
-                {
-                    b.Property<int>("IdReservation")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IdReservation"));
-
-                    b.Property<int>("BookId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("ExpirationDate")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int?>("ReaderId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("ReservationDate")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
-
-                    b.HasKey("IdReservation");
-
-                    b.HasIndex("BookId");
-
-                    b.HasIndex("ReaderId");
-
-                    b.ToTable("Reservations");
-                });
-
             modelBuilder.Entity("Library2.Models.Book", b =>
                 {
                     b.HasOne("Library2.Models.Publisher", "Publisher")
@@ -358,23 +327,6 @@ namespace Library2.Migrations
                     b.Navigation("Book");
 
                     b.Navigation("Employee");
-
-                    b.Navigation("Reader");
-                });
-
-            modelBuilder.Entity("Library2.Models.Reservation", b =>
-                {
-                    b.HasOne("Library2.Models.Book", "Book")
-                        .WithMany()
-                        .HasForeignKey("BookId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Library2.Models.Reader", "Reader")
-                        .WithMany()
-                        .HasForeignKey("ReaderId");
-
-                    b.Navigation("Book");
 
                     b.Navigation("Reader");
                 });

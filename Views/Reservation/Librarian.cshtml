@@ -1,0 +1,87 @@
+﻿@model List<Library2.Models.Reservation>
+@using Library2.Models
+@{
+    ViewData["Title"] = "Управление бронированиями";
+    var readers = ViewBag.Readers as List<Reader>;
+}
+
+<h1>Управление Бронированиями</h1>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<h3>Активные бронирования</h3>
+
+@if (Model == null || !Model.Any())
+{
+    <p class="alert alert-info">Активных бронирований нет.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Книга</th>
+                <th>Дата брони</th>
+                <th>Истекает</th>
+                <th>Статус</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var res in Model)
+            {
+                bool isExpired = res.ExpirationDate.HasValue && res.ExpirationDate.Value < DateTime.Now;
+                <tr class="@(isExpired ? "table-danger" : "")">
+                    <td>@res.Book.Title</td>
+                    <td>@res.ReservationDate.ToShortDateString()</td>
+                    <td>@(res.ExpirationDate.HasValue? res.ExpirationDate.Value.ToShortDateString() : "Нет")</td>
+                    <td>
+                        @res.Status
+                        @(isExpired ? "(Просрочено)" : "")
+                    </td>
+                    <td>
+                        @if (res.Status == "Pending" && !isExpired)
+                        {
+                            @* Форма для выдачи книги *@
+                            <form asp-controller="Reservations" asp-action="IssueBook" method="post" class="d-inline">
+                                <input type="hidden" name="reservationId" value="@res.IdReservation" />
+
+                                <select name="readerId" class="form-select form-select-sm d-inline w-auto" required>
+                                    <option value="">-- Выбрать читателя --</option>
+                                    @foreach (var reader in readers)
+                                    {
+                                        <option value="@reader.IdReader">@reader.LastName @reader.FirstName</option>
+                                    }
+                                </select>
+                                <button type="submit" class="btn btn-success btn-sm ms-2">Выдать</button>
+                            </form>
+
+                            <form asp-controller="Reservations" asp-action="Cancel" method="post" class="d-inline ms-2">
+                                <input type="hidden" name="reservationId" value="@res.IdReservation" />
+                                <button type="submit" class="btn btn-warning btn-sm">Отменить</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Действие невозможно</span>
+                            @if (isExpired)
+                            {
+                                <form asp-controller="Reservations" asp-action="Cancel" method="post" class="d-inline ms-2">
+                                    <input type="hidden" name="reservationId" value="@res.IdReservation" />
+                                    <button type="submit" class="btn btn-warning btn-sm">Отменить просроченную</button>
+                                </form>
+                            }
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

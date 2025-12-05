@@ -20,17 +20,39 @@ namespace Library2.Controllers
         }
 
         // GET: Books
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string searchString)
         {
-            var books = await _context.Books
+            // 1. Объявляем переменную как IQueryable<Book>
+            // ИЛИ как var, и сразу же присваиваем ей базовый DbSet
+            IQueryable<Book> books = _context.Books;
+
+            // 2. Применяем все необходимые Include
+            books = books
                 .Include(b => b.Publisher)
                 .Include(b => b.BookAuthors)
                     .ThenInclude(ba => ba.Author)
-                .Include(b => b.BookGenres)
-                    .ThenInclude(bg => bg.Genre)
-                .Include(b => b.BookLoans)
-                .ToListAsync();
-            return View(books);
+                .Include(b => b.BookLoans); // Теперь books имеет специализированный тип IIncludableQueryable
+
+            // 3. Теперь применяем Where()
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                ViewData["CurrentFilter"] = searchString;
+                string lowerSearch = searchString.ToLower();
+
+                // ⚠️ Здесь books = books.Where(...) возвращает IQueryable<Book>, 
+                // но поскольку books было объявлено как IQueryable<Book> на Шаге 1, проблем с присваиванием нет.
+                books = books.Where(b =>
+                    b.Title.ToLower().Contains(lowerSearch) ||
+                    (b.Annotation != null && b.Annotation.ToLower().Contains(lowerSearch)) ||
+                    b.BookAuthors.Any(ba =>
+                        ba.Author.FirstName.ToLower().Contains(lowerSearch) ||
+                        ba.Author.LastName.ToLower().Contains(lowerSearch)
+                    )
+                );
+            }
+
+            // 4. Выполняем запрос
+            return View(await books.OrderBy(b => b.Title).ToListAsync());
         }
 
         // GET: Books/Details
