@@ -121,56 +121,35 @@ namespace Library2.Controllers
         // POST: Reader/Reserve
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Reserve(int BookId)
+        public async Task<IActionResult> Reserve(int bookId)
         {
-            var userLogin = User.Identity?.Name ?? User.FindFirstValue(ClaimTypes.Name);
-            var readerId = await GetReaderIdAsync(userLogin);
+            // Получаем логин текущего пользователя (читателя)
+            var userLogin = User.Identity?.Name;
 
-            if (!readerId.HasValue)
+            // Находим ID читателя в базе (используя твой метод поиска по логину)
+            var reader = await _context.Readers.FirstOrDefaultAsync(r => r.Login == userLogin);
+
+            if (reader == null) return NotFound("Профиль читателя не найден");
+
+            // Создаем новую запись бронирования
+            var reservation = new Reservation
             {
-                TempData["Error"] = "Профиль читателя не найден.";
-                return RedirectToAction(nameof(Index));
-            }
+                BookId = bookId,
+                ReaderId = reader.IdReader,
+                ReservationDate = DateTime.Now,
 
-            var book = await _context.Books
-                .Include(b => b.BookLoans.Where(bl => bl.ReturnDate == null))
-                .FirstOrDefaultAsync(b => b.IdBook == BookId);
+                // УСТАНОВКА СРОКА: Текущая дата + 3 дня
+                ExpirationDate = DateTime.Now.AddDays(3),
 
-            if (book == null) return NotFound();
+                Status = "Pending"
+            };
 
-            var alreadyReserved = await _context.Reservations
-                .AnyAsync(r => r.BookId == BookId && r.ReaderId == readerId.Value && (r.Status == "Pending" || r.Status == "Ready"));
+            _context.Reservations.Add(reservation);
+            await _context.SaveChangesAsync();
 
-            if (alreadyReserved)
-            {
-                TempData["Error"] = "Вы уже забронировали эту книгу.";
-                return RedirectToAction(nameof(Index));
-            }
+            TempData["Success"] = "Книга забронирована! Пожалуйста, заберите её в течение 3-х дней.";
 
-            int loaned = book.BookLoans.Count();
-            int reserved = await _context.Reservations
-                .CountAsync(r => r.BookId == BookId && (r.Status == "Pending" || r.Status == "Ready"));
-
-            if (book.Quantity - loaned - reserved > 0)
-            {
-                var res = new Reservation
-                {
-                    BookId = BookId,
-                    ReaderId = readerId.Value,
-                    ReservationDate = DateTime.Now,
-                    ExpirationDate = DateTime.Now.AddDays(3),
-                    Status = "Pending"
-                };
-                _context.Reservations.Add(res);
-                await _context.SaveChangesAsync();
-                TempData["Success"] = "Книга забронирована.";
-            }
-            else
-            {
-                TempData["Error"] = "Нет свободных экземпляров.";
-            }
-
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction("MyBooks");
         }
 
 
@@ -197,6 +176,37 @@ namespace Library2.Controllers
             ViewBag.Reservations = reservations;
 
             return View("MyBooks");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CancelReservation(int id)
+        {
+            var reservation = await _context.Reservations.FindAsync(id);
+
+            if (reservation == null) return NotFound();
+
+            var userLogin = User.Identity?.Name;
+            var reader = await _context.Readers.FirstOrDefaultAsync(r => r.Login == userLogin);
+
+            if (reader == null || reservation.ReaderId != reader.IdReader)
+            {
+                TempData["Error"] = "У вас нет прав для отмены этой брони.";
+                return RedirectToAction(nameof(MyBooks));
+            }
+
+            if (reservation.Status == "Pending" || reservation.Status == "Ready")
+            {
+                reservation.Status = "Cancelled";
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "Бронирование успешно отменено.";
+            }
+            else
+            {
+                TempData["Error"] = "Эту бронь уже нельзя отменить.";
+            }
+
+            return RedirectToAction(nameof(MyBooks));
         }
     }
 }

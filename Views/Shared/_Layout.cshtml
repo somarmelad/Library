@@ -6,12 +6,13 @@
     <title>@ViewData["Title"] - Library2</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @* Подключаем иконки, чтобы кнопка выглядела лучше *@
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 </head>
 <body class="bg-light">
     <header>
         <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom shadow-sm mb-4">
             <div class="container">
-                @* Единственная ссылка в хедере - на Главную *@
                 <a class="navbar-brand fw-bold text-primary" asp-controller="Home" asp-action="Index" style="font-size: 1.5rem;">
                     Library
                 </a>
@@ -19,9 +20,18 @@
                 <div class="d-flex align-items-center">
                     @if (User.Identity.IsAuthenticated)
                     {
+                        @* ДОБАВЛЕНО: Ссылка на Мои Книги только для Читателя *@
+                        @if (User.IsInRole("Reader"))
+                        {
+                            <a class="nav-link text-success fw-bold me-3" asp-controller="Reader" asp-action="MyBooks">
+                                <i class="bi bi-book"></i> Мои книги
+                            </a>
+                        }
+
                         <span class="navbar-text me-3 d-none d-md-inline">
-                            Вы вошли как: <strong>@User.Identity.Name</strong>
+                            <i class="bi bi-person"></i> <strong>@User.Identity.Name</strong>
                         </span>
+
                         <a class="btn btn-outline-danger btn-sm" asp-controller="Account" asp-action="Logout">Выйти</a>
                     }
                     else
@@ -35,7 +45,6 @@
 
     <div class="container">
         <main role="main" class="pb-3">
-            @* Сообщения об успехе или ошибках *@
             @if (TempData["Error"] != null)
             {
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">

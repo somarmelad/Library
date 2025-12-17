@@ -434,6 +434,8 @@ namespace Library2.Controllers
         // GET: Librarian/Reservations
         public async Task<IActionResult> Reservations()
         {
+            await CleanupExpiredReservations();
+
             var reservations = await _context.Reservations
                 .Include(r => r.Book)
                 .Include(r => r.Reader)
@@ -503,6 +505,26 @@ namespace Library2.Controllers
             TempData["Success"] = $"Книга '{reservation.Book.Title}' выдана сотрудником (ID: {employeeId.Value})";
 
             return RedirectToAction(nameof(Reservations));
+        }
+
+
+        private async Task CleanupExpiredReservations()
+        {
+            var now = DateTime.Now;
+
+            var expired = await _context.Reservations
+                .Where(r => (r.Status == "Pending" || r.Status == "Ready")
+                         && r.ExpirationDate < now)
+                .ToListAsync();
+
+            if (expired.Any())
+            {
+                foreach (var res in expired)
+                {
+                    res.Status = "Cancelled"; 
+                }
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }
