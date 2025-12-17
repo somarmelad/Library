@@ -8,6 +8,18 @@ namespace Library2.Models
         public int IdEmployee { get; set; }
 
         [Required]
+        [StringLength(50)]
+        public string Login { get; set; }
+
+        [Required]
+        [StringLength(100)]
+        public string PasswordHash { get; set; }
+
+        
+        [Required]
+        public string Role { get; set; } = "Librarian";
+
+        [Required]
         [StringLength(45)]
         public string LastName { get; set; }
 

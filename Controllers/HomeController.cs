@@ -1,9 +1,13 @@
 ﻿using Library2.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization; 
+using System.Security.Claims; 
 
 namespace Library2.Controllers
 {
+   
+    [Authorize]
     public class HomeController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -15,26 +19,46 @@ namespace Library2.Controllers
             _logger = logger;
         }
 
+        // GET: /Home/Index
+        // Выполняет маршрутизацию в зависимости от роли пользователя
         public async Task<IActionResult> Index()
+        {
+           
+
+            if (User.IsInRole("Librarian"))
+            {
+               
+                return RedirectToAction("Dashboard", "Librarian");
+            }
+            else if (User.IsInRole("Reader"))
+            {
+                
+                return RedirectToAction("Index", "Books");
+            }
+            else
+            {
+                
+                _logger.LogWarning("Пользователь {UserName} аутентифицирован, но не имеет заданной роли.", User.Identity.Name);
+                return RedirectToAction("Logout", "Account");
+            }
+
+            
+        }
+
+        
+        [Authorize(Roles = "Librarian")]
+        public async Task<IActionResult> DbStatusCheck()
         {
             try
             {
-                // Проверяем подключение к БД
                 var canConnect = await _context.Database.CanConnectAsync();
 
                 if (canConnect)
                 {
                     ViewBag.DbStatus = "Подключение к MySQL успешно!";
-
-                    // Пробуем получить список книг
-                    var booksCount = await _context.Books.CountAsync();
-                    ViewBag.BooksCount = booksCount;
-
-                    var readersCount = await _context.Readers.CountAsync();
-                    ViewBag.ReadersCount = readersCount;
-
-                    var loansCount = await _context.BookLoans.CountAsync();
-                    ViewBag.LoansCount = loansCount;
+                    ViewBag.BooksCount = await _context.Books.CountAsync();
+                    ViewBag.ReadersCount = await _context.Readers.CountAsync();
+                    ViewBag.LoansCount = await _context.BookLoans.CountAsync();
                 }
                 else
                 {
@@ -47,15 +71,16 @@ namespace Library2.Controllers
                 _logger.LogError(ex, "Ошибка подключения к БД");
             }
 
-            return View();
+            return View(); 
         }
+
 
         public IActionResult Privacy()
         {
             return View();
         }
 
-        // Простой тестовый метод
+        
         public IActionResult Test()
         {
             return Content("HomeController работает!");

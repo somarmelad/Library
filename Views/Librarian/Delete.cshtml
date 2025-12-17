@@ -11,16 +11,16 @@
     <h4>@Model.Title</h4>
     <hr />
     <dl class="row">
-        
+
         <dt class="col-sm-3">Название</dt>
         <dd class="col-sm-9">@Html.DisplayFor(model => model.Title)</dd>
-        
+
         <dt class="col-sm-3">Издательство</dt>
         <dd class="col-sm-9">@Html.DisplayFor(model => model.Publisher.Name)</dd>
 
         <dt class="col-sm-3">Количество</dt>
         <dd class="col-sm-9">@Html.DisplayFor(model => model.Quantity)</dd>
-        
+
         <dt class="col-sm-3">Авторы</dt>
         <dd class="col-sm-9">
             @{
@@ -37,7 +37,7 @@
             @string.Join(", ", genres)
         </dd>
     </dl>
-    
+
     <form asp-action="Delete">
         <input type="hidden" asp-for="IdBook" />
         <button type="submit" class="btn btn-danger">Удалить</button>

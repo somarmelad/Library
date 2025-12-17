@@ -7,7 +7,17 @@ namespace Library2.Models
 
         [Key]
         public int IdReader { get; set; }
+        [Required]
+        [StringLength(50)]
+        public string Login { get; set; }
 
+        [Required]
+        [StringLength(100)]
+        public string PasswordHash { get; set; }
+
+        
+        [Required]
+        public string Role { get; set; } = "Reader";
         [Required]
         [StringLength(45)]
         public string LastName { get; set; }
@@ -25,7 +35,7 @@ namespace Library2.Models
         [DataType(DataType.Date)]
         public DateTime? BirthDate { get; set; }
 
-        // Навигационные свойства
+        
         public virtual ICollection<BookLoan> BookLoans { get; set; } = new List<BookLoan>();
     }
 }

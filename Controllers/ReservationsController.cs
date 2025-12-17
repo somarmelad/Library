@@ -4,6 +4,9 @@ using Library2.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using System;
 
 namespace Library2.Controllers
 {
@@ -17,11 +20,19 @@ namespace Library2.Controllers
         }
 
         // POST: Reservations/Reserve
-        // Метод, вызываемый с главной страницы при нажатии "Забронировать"
+        [Authorize(Roles = "Reader")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Reserve(int BookId)
         {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int readerId))
+            {
+                TempData["Error"] = "Ошибка аутентификации. Пожалуйста, войдите в систему.";
+                return RedirectToAction("Login", "Account");
+            }
+
+            // Важно: загружаем книгу
             var book = await _context.Books
                 .Include(b => b.BookLoans)
                 .FirstOrDefaultAsync(b => b.IdBook == BookId);
@@ -29,27 +40,38 @@ namespace Library2.Controllers
             if (book == null)
             {
                 TempData["Error"] = "Книга не найдена.";
-                return RedirectToAction("Index", "Books");
+                return RedirectToAction("Index", "Reader");
             }
 
-            // Проверка доступности
-            int availableCount = book.Quantity - (book.BookLoans?.Count(bl => bl.ReturnDate == null) ?? 0);
+            // Проверка на дубликат бронирования
+            bool alreadyReserved = await _context.Reservations.AnyAsync(
+                r => r.BookId == BookId &&
+                     r.ReaderId == readerId &&
+                     (r.Status == "Pending" || r.Status == "Ready")
+            );
 
-            if (availableCount <= 0)
+            if (alreadyReserved)
             {
-                TempData["Error"] = $"Книга '{book.Title}' сейчас отсутствует. Бронирование невозможно.";
-                return RedirectToAction("Index", "Books");
+                TempData["Error"] = $"Книга '{book.Title}' уже забронирована вами.";
+                return RedirectToAction("Index", "Reader");
             }
 
-            // ⚠️ В реальном приложении здесь должна быть логика получения ID читателя (пользователя)
-            // Для упрощения, пока перенаправим на страницу выбора читателя/подтверждения.
-            // Вместо этого, создадим пока бронь без ReaderId, а библиотекарь сам его выберет.
+            // Считаем доступность
+            int activeLoansCount = book.BookLoans?.Count(bl => bl.ReturnDate == null) ?? 0;
+            int activeReservationsCount = await _context.Reservations
+                .CountAsync(r => r.BookId == BookId && (r.Status == "Pending" || r.Status == "Ready"));
+
+            if (book.Quantity <= (activeLoansCount + activeReservationsCount))
+            {
+                TempData["Error"] = $"Книга '{book.Title}' сейчас недоступна для бронирования.";
+                return RedirectToAction("Index", "Reader");
+            }
 
             var newReservation = new Reservation
             {
                 BookId = BookId,
+                ReaderId = readerId,
                 ReservationDate = DateTime.Now,
-                // Бронь активна 3 дня
                 ExpirationDate = DateTime.Now.AddDays(3),
                 Status = "Pending"
             };
@@ -57,33 +79,34 @@ namespace Library2.Controllers
             _context.Reservations.Add(newReservation);
             await _context.SaveChangesAsync();
 
-            TempData["Success"] = $"Книга '{book.Title}' успешно забронирована! Бронь действительна до {newReservation.ExpirationDate:dd.MM.yyyy}.";
-            return RedirectToAction("Index", "Books");
+            TempData["Success"] = $"Книга '{book.Title}' забронирована до {newReservation.ExpirationDate:dd.MM.yyyy}.";
+            return RedirectToAction("Index", "Reader");
         }
 
-        // GET: Reservations/Librarian (Панель библиотекаря)
-        // Здесь библиотекарь видит бронирования и проводит выдачу.
+        // GET: Reservations/Librarian
+        [Authorize(Roles = "Librarian")]
         public async Task<IActionResult> Librarian()
         {
             var activeReservations = await _context.Reservations
                 .Include(r => r.Book)
-                .Include(r => r.Reader) // Если ReaderId заполнен
+                .Include(r => r.Reader)
                 .Where(r => r.Status == "Pending" || r.Status == "Ready")
                 .OrderBy(r => r.ReservationDate)
                 .ToListAsync();
 
-            // Передаем также список всех читателей для формы выдачи
             ViewBag.Readers = await _context.Readers.OrderBy(r => r.LastName).ToListAsync();
-
             return View(activeReservations);
         }
 
-        // POST: Reservations/IssueBook (Выдача забронированной книги)
+        // POST: Reservations/IssueBook
+        [Authorize(Roles = "Librarian")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> IssueBook(int reservationId, int readerId)
         {
-            var reservation = await _context.Reservations.FindAsync(reservationId);
+            var reservation = await _context.Reservations
+                .Include(r => r.Book)
+                .FirstOrDefaultAsync(r => r.IdReservation == reservationId);
 
             if (reservation == null)
             {
@@ -91,44 +114,40 @@ namespace Library2.Controllers
                 return RedirectToAction(nameof(Librarian));
             }
 
-            // 1. Проверяем, существует ли читатель
             var reader = await _context.Readers.FindAsync(readerId);
             if (reader == null)
             {
-                TempData["Error"] = "Выбранный читатель не существует.";
+                TempData["Error"] = "Читатель не найден.";
                 return RedirectToAction(nameof(Librarian));
             }
 
-            // 2. Создаем новую запись о выдаче (BookLoan)
-            var newLoan = new BookLoan // Предполагая, что у вас есть модель BookLoan
+            var newLoan = new BookLoan
             {
                 BookId = reservation.BookId,
                 ReaderId = readerId,
-                // Предполагается, что в реальной системе вы получите ID текущего сотрудника
-                EmployeeId = 1, // ID сотрудника (замените на реальную логику аутентификации)
-                LoanDate = DateTime.Now,
-                // ReturnDate = null (активная выдача)
+                EmployeeId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)),
+                LoanDate = DateTime.Now
             };
 
             _context.BookLoans.Add(newLoan);
 
-            // 3. Обновляем статус бронирования
             reservation.Status = "Completed";
-            reservation.ReaderId = readerId; // Фиксируем, кому выдана книга
-
             _context.Reservations.Update(reservation);
+
             await _context.SaveChangesAsync();
 
-            TempData["Success"] = $"Книга '{reservation.Book.Title}' успешно выдана читателю {reader.LastName}.";
+            TempData["Success"] = $"Книга '{reservation.Book?.Title}' успешно выдана.";
             return RedirectToAction(nameof(Librarian));
         }
 
-        // POST: Reservations/Cancel
+        [Authorize(Roles = "Librarian")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Cancel(int reservationId)
         {
-            var reservation = await _context.Reservations.FindAsync(reservationId);
+            var reservation = await _context.Reservations
+                .FirstOrDefaultAsync(r => r.IdReservation == reservationId);
+
             if (reservation != null)
             {
                 reservation.Status = "Canceled";

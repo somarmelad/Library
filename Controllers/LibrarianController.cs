@@ -7,41 +7,49 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace Library2.Controllers
 {
-    [Authorize]
-    public class BooksController : Controller
+    // Доступен только пользователям с ролью "Librarian"
+    [Authorize(Roles = "Librarian")]
+    public class LibrarianController : Controller
     {
         private readonly ApplicationDbContext _context;
 
-        public BooksController(ApplicationDbContext context)
+        public LibrarianController(ApplicationDbContext context)
         {
             _context = context;
         }
 
-        // GET: Books
-        public async Task<IActionResult> Index(string searchString)
+        // GET: Librarian/Index (Теперь это навигационная страница)
+        [HttpGet]
+        public IActionResult Index()
         {
-           
+            // Просто возвращаем представление для навигационной панели
+            return View();
+        }
+
+        // GET: Librarian/BookList 
+        public async Task<IActionResult> BookList(string searchString)
+        {
+            ViewData["CurrentFilter"] = searchString;
+
             IQueryable<Book> books = _context.Books;
 
-            
+            // Включаем все связанные данные для полного отображения в таблице управления
             books = books
                 .Include(b => b.Publisher)
                 .Include(b => b.BookAuthors)
                     .ThenInclude(ba => ba.Author)
-                .Include(b => b.BookLoans); 
+                // Фильтруем активные выдачи: те, которые не возвращены (ReturnDate == null).
+                // Внимание: В BookLoan нет IsReserved. Все незавершенные считаются активными/бронями.
+                .Include(b => b.BookLoans.Where(bl => bl.ReturnDate == null));
 
-           
             if (!string.IsNullOrEmpty(searchString))
             {
-                ViewData["CurrentFilter"] = searchString;
                 string lowerSearch = searchString.ToLower();
 
-                
                 books = books.Where(b =>
                     b.Title.ToLower().Contains(lowerSearch) ||
                     (b.Annotation != null && b.Annotation.ToLower().Contains(lowerSearch)) ||
@@ -52,17 +60,18 @@ namespace Library2.Controllers
                 );
             }
 
-            
+            // Используем представление LibrarianList.cshtml
             return View(await books.OrderBy(b => b.Title).ToListAsync());
         }
 
-        
+        // GET: Librarian/Details/5 (Просмотр подробностей книги)
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
+            // Включаем Reader через BookLoan.Reader, так как BookLoan.User не существует
             var book = await _context.Books
                 .Include(b => b.Publisher)
                 .Include(b => b.BookAuthors)
@@ -70,6 +79,7 @@ namespace Library2.Controllers
                 .Include(b => b.BookGenres)
                     .ThenInclude(bg => bg.Genre)
                 .Include(b => b.BookLoans)
+                    .ThenInclude(bl => bl.Reader) // Используем Reader
                 .FirstOrDefaultAsync(m => m.IdBook == id);
 
             if (book == null)
@@ -79,10 +89,10 @@ namespace Library2.Controllers
             return View(book);
         }
 
-        // GET: Books/Create
-        [Authorize(Roles = "Librarian")]
+        // GET: Librarian/Create
         public async Task<IActionResult> Create()
         {
+            // Загрузка списков для DropDown/MultiSelect
             ViewBag.Publishers = new SelectList(await _context.Publishers.ToListAsync(), "IdPublisher", "Name");
 
             var authorsList = await _context.Authors
@@ -99,14 +109,11 @@ namespace Library2.Controllers
             return View(new Book());
         }
 
-
-        // POST: Books/Create
-        
+        // POST: Librarian/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Book book, List<int> selectedAuthors, List<int> selectedGenres)
         {
-
             if (selectedAuthors == null || selectedAuthors.Count == 0)
             {
                 ModelState.AddModelError("selectedAuthors", "Выберите хотя бы одного автора.");
@@ -116,19 +123,12 @@ namespace Library2.Controllers
                 ModelState.AddModelError("selectedGenres", "Выберите хотя бы один жанр.");
             }
 
-            
-
             if (ModelState.IsValid)
             {
                 try
                 {
                     _context.Add(book);
                     await _context.SaveChangesAsync();
-
-                    if (book.IdBook == 0)
-                    {
-                        throw new InvalidOperationException("Книга была добавлена, но IdBook не был сгенерирован.");
-                    }
 
                     foreach (var authorId in selectedAuthors)
                     {
@@ -141,12 +141,10 @@ namespace Library2.Controllers
                     }
 
                     await _context.SaveChangesAsync();
-
                     return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateException dbEx)
                 {
-
                     Console.WriteLine("Ошибка сохранения БД: " + dbEx.InnerException?.Message ?? dbEx.Message);
                     ModelState.AddModelError("", "Ошибка сохранения книги в базу данных. Проверьте, существует ли выбранный Издатель.");
                 }
@@ -157,9 +155,8 @@ namespace Library2.Controllers
                 }
             }
 
-            
+            // Перезагрузка ViewBag при ошибке
             ViewBag.Publishers = new SelectList(await _context.Publishers.ToListAsync(), "IdPublisher", "Name", book.PublisherId);
-
             var authorsList = await _context.Authors
                 .Select(a => new SelectListItem
                 {
@@ -168,22 +165,15 @@ namespace Library2.Controllers
                 })
                 .ToListAsync();
             ViewBag.Authors = new MultiSelectList(authorsList, "Value", "Text", selectedAuthors);
-
-            var genresList = await _context.Genres.ToListAsync();
-            ViewBag.Genres = new MultiSelectList(genresList, "IdGenre", "Name", selectedGenres);
+            ViewBag.Genres = new MultiSelectList(await _context.Genres.ToListAsync(), "IdGenre", "Name", selectedGenres);
 
             return View(book);
         }
 
-
-        // GET: Books/Edit
-        [Authorize(Roles = "Librarian")]
+        // GET: Librarian/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var book = await _context.Books
                 .Include(b => b.BookAuthors)
@@ -192,12 +182,9 @@ namespace Library2.Controllers
                     .ThenInclude(bg => bg.Genre)
                 .FirstOrDefaultAsync(m => m.IdBook == id);
 
-            if (book == null)
-            {
-                return NotFound();
-            }
+            if (book == null) return NotFound();
 
-           
+            // Загрузка списков и выделение текущих значений
             ViewBag.Publishers = new SelectList(await _context.Publishers.ToListAsync(), "IdPublisher", "Name", book.PublisherId);
 
             var authorsList = await _context.Authors
@@ -217,15 +204,12 @@ namespace Library2.Controllers
             return View(book);
         }
 
-        // POST: Books/Edit
+        // POST: Librarian/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Book book, List<int> selectedAuthors, List<int> selectedGenres)
         {
-            if (id != book.IdBook)
-            {
-                return NotFound();
-            }
+            if (id != book.IdBook) return NotFound();
 
             if (selectedAuthors == null || selectedAuthors.Count == 0)
             {
@@ -238,34 +222,24 @@ namespace Library2.Controllers
 
             if (ModelState.IsValid)
             {
-                var bookToUpdate = await _context.Books
-                    .Include(b => b.BookAuthors)
-                    .Include(b => b.BookGenres)
-                    .AsNoTracking() 
-                    .FirstOrDefaultAsync(m => m.IdBook == book.IdBook);
-
-                if (bookToUpdate == null) return NotFound();
-
                 try
                 {
-                    
+                    // Обновляем саму книгу
                     _context.Update(book);
 
-                  
+                    // Управление связями Авторов
                     var oldAuthors = _context.BookAuthors.Where(ba => ba.BookId == book.IdBook);
                     _context.BookAuthors.RemoveRange(oldAuthors);
 
-                    
                     foreach (var authorId in selectedAuthors)
                     {
                         _context.BookAuthors.Add(new BookAuthor { BookId = book.IdBook, AuthorId = authorId });
                     }
 
-                   
+                    // Управление связями Жанров
                     var oldGenres = _context.BookGenres.Where(bg => bg.BookId == book.IdBook);
                     _context.BookGenres.RemoveRange(oldGenres);
 
-                   
                     foreach (var genreId in selectedGenres)
                     {
                         _context.BookGenres.Add(new BookGenre { BookId = book.IdBook, GenreId = genreId });
@@ -288,9 +262,8 @@ namespace Library2.Controllers
                 }
             }
 
-            
+            // Перезагрузка ViewBag при ошибке
             ViewBag.Publishers = new SelectList(await _context.Publishers.ToListAsync(), "IdPublisher", "Name", book.PublisherId);
-
             var authorsList = await _context.Authors
                 .Select(a => new SelectListItem
                 {
@@ -299,21 +272,16 @@ namespace Library2.Controllers
                 })
                 .ToListAsync();
             ViewBag.Authors = new MultiSelectList(authorsList, "Value", "Text", selectedAuthors);
-
             ViewBag.Genres = new MultiSelectList(await _context.Genres.ToListAsync(), "IdGenre", "Name", selectedGenres);
 
             return View(book);
         }
 
 
-        // GET: Books/Delete
-        [Authorize(Roles = "Librarian")]
+        // GET: Librarian/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var book = await _context.Books
                 .Include(b => b.Publisher)
@@ -323,15 +291,12 @@ namespace Library2.Controllers
                     .ThenInclude(bg => bg.Genre)
                 .FirstOrDefaultAsync(m => m.IdBook == id);
 
-            if (book == null)
-            {
-                return NotFound();
-            }
+            if (book == null) return NotFound();
 
             return View(book);
         }
 
-        // POST: Books/Delete
+        // POST: Librarian/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -346,10 +311,9 @@ namespace Library2.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-
-        // POST: Books/CreatePublisherAjax
+        // POST: Librarian/CreatePublisherAjax
         [HttpPost]
-        [ValidateAntiForgeryToken] 
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreatePublisherAjax(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -357,7 +321,6 @@ namespace Library2.Controllers
                 return Json(new { success = false, message = "Имя издателя не может быть пустым." });
             }
 
-           
             if (await _context.Publishers.AnyAsync(p => p.Name.ToLower() == name.Trim().ToLower()))
             {
                 return Json(new { success = false, message = $"Издательство '{name}' уже существует." });
@@ -379,15 +342,14 @@ namespace Library2.Controllers
             }
             catch (Exception ex)
             {
-                
                 return Json(new { success = false, message = "Ошибка при сохранении издателя: " + ex.Message });
             }
         }
 
 
-        // POST: Books/CreateAuthorAjax
+        // POST: Librarian/CreateAuthorAjax
         [HttpPost]
-        [ValidateAntiForgeryToken] 
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateAuthorAjax(string firstName, string lastName, string middleName)
         {
             if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
@@ -445,9 +407,9 @@ namespace Library2.Controllers
         }
 
 
-        // POST: Books/CreateGenreAjax
+        // POST: Librarian/CreateGenreAjax
         [HttpPost]
-        [ValidateAntiForgeryToken] 
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateGenreAjax(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -455,7 +417,6 @@ namespace Library2.Controllers
                 return Json(new { success = false, message = "Название жанра не может быть пустым." });
             }
 
-            
             if (await _context.Genres.AnyAsync(g => g.Name.ToLower() == name.Trim().ToLower()))
             {
                 return Json(new { success = false, message = $"Жанр '{name}' уже существует." });

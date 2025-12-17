@@ -1,0 +1,81 @@
+﻿@model IEnumerable<Library2.Models.Book>
+
+@{
+    ViewData["Title"] = "Панель управления Библиотекаря: Книги";
+}
+
+<h1 class="display-4">Панель управления Библиотекаря</h1>
+<p class="lead">Список всех книг в каталоге.</p>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Добавить новую книгу
+    </a>
+</p>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Название</th>
+                <th>Авторы</th>
+                <th>Жанры</th>
+                <th>Издательство</th>
+                <th>
+                    Количество
+                    <span class="d-block small text-warning">(Занято / Всего)</span>
+                </th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                // Считаем активные выдачи (они же бронирования, т.к. нет IsReserved)
+                var activeLoansCount = item.BookLoans.Count(bl => bl.ReturnDate == null);
+                var availableCount = item.Quantity - activeLoansCount;
+                var quantityBadgeClass = availableCount > 0 ? "bg-success" : "bg-danger";
+
+                <tr>
+                    <td>@item.Title</td>
+                    <td>
+                        @foreach (var author in item.BookAuthors)
+                        {
+                            <span class="badge bg-secondary me-1">@author.Author.LastName @author.Author.FirstName</span>
+                        }
+                    </td>
+                    <td>
+                        @foreach (var genre in item.BookGenres)
+                        {
+                            <span class="badge bg-info me-1">@genre.Genre.Name</span>
+                        }
+                    </td>
+                    <td>@item.Publisher?.Name</td>
+                    <td>
+                        <span class="badge @quantityBadgeClass">
+                            @activeLoansCount / @item.Quantity
+                        </span>
+                        @if (availableCount <= 0)
+                        {
+                            <span class="text-danger d-block small mt-1">
+                                Нет в наличии
+                            </span>
+                        }
+                    </td>
+                    <td>
+                        <a asp-action="Details" asp-route-id="@item.IdBook" class="btn btn-info btn-sm">Подробности</a>
+                        <a asp-action="Edit" asp-route-id="@item.IdBook" class="btn btn-warning btn-sm">Редактировать</a>
+                        <a asp-action="Delete" asp-route-id="@item.IdBook" class="btn btn-danger btn-sm">Удалить</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+
+</div>
+
+@section Scripts {
+    <!-- Возможно, здесь понадобятся скрипты для поиска или пагинации -->
+    <script src="https://www.google.com/search?q=https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+}

@@ -1,0 +1,48 @@
+﻿@{
+    ViewData["Title"] = "Главная панель управления";
+}
+
+<div class="container mt-5">
+    <h1 class="mb-4">Панель управления Библиотекаря</h1>
+    <p class="lead">Быстрый доступ к основным функциям библиотеки.</p>
+
+    <hr />
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm h-100 border-primary">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">Управление Книгами</h5>
+                    <p class="card-text">Просмотр каталога, добавление, редактирование и удаление книг, а также управление авторами, жанрами и издателями.</p>
+                    <a asp-controller="Librarian" asp-action="BookList" class="btn btn-primary mt-3">
+                        Перейти к Книгам
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm h-100 border-success">
+                <div class="card-body">
+                    <h5 class="card-title text-success">Управление Читателями</h5>
+                    <p class="card-text">Просмотр списка всех зарегистрированных читателей. Добавление, редактирование, удаление и просмотр их истории.</p>
+                    <a asp-controller="Readers" asp-action="Index" class="btn btn-success mt-3">
+                        Перейти к Читателям
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm h-100 border-warning">
+                <div class="card-body">
+                    <h5 class="card-title text-warning">Выдача / Возврат Книг</h5>
+                    <p class="card-text">Управление активными выдачами: оформление новых выдач, прием возвращенных книг и управление бронированием.</p>
+                    <a asp-controller="BookLoans" asp-action="Index" class="btn btn-warning mt-3">
+                        Перейти к Выдачам
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

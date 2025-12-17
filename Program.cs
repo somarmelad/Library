@@ -1,5 +1,8 @@
 ﻿using Library2.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.Cookies; 
+using MySqlConnector;
+
 namespace Library2
 {
     public class Program
@@ -8,28 +11,34 @@ namespace Library2
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Конфигурация БД
+            
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseMySql(
                     builder.Configuration.GetConnectionString("DefaultConnection"),
-                    new MySqlServerVersion(new Version(5, 7, 24)),  // Твоя версия из XAMPP
+                    new MySqlServerVersion(new Version(5, 7, 24)),
                     mySqlOptions => mySqlOptions
-                        .EnableRetryOnFailure()  // Опционально: retry при ошибках
+                        .EnableRetryOnFailure()
                 ));
-            // ДОБАВЬ ЭТО: Регистрация MVC (контроллеры + Views)
-            builder.Services.AddControllersWithViews(); // Для MVC (включает Razor Pages опционально)
 
-            // Опционально: Swagger для API-части, если нужно (но для чистого MVC не обязательно)
-            // builder.Services.AddEndpointsApiExplorer();
-            // builder.Services.AddSwaggerGen();
+            
+            builder.Services.AddAuthentication("CookieAuth")
+                .AddCookie("CookieAuth", options =>
+                {
+                    options.LoginPath = "/Account/Login";
+                    options.AccessDeniedPath = "/Account/AccessDenied";
+                    options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+                });
+
+            builder.Services.AddControllersWithViews();
+
+            builder.Services.AddAuthorization();
 
             var app = builder.Build();
 
-            // Твоя часть: Создание/проверка БД (ок, но можно объединить в один scope для эффективности)
             using (var scope = app.Services.CreateScope())
             {
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                context.Database.EnsureCreated(); // Создаёт БД и миграции
+
 
                 if (context.Database.CanConnect())
                 {
@@ -41,26 +50,28 @@ namespace Library2
                 }
             }
 
-            // ДОБАВЬ ЭТО: Middleware pipeline для MVC
+
             if (app.Environment.IsDevelopment())
             {
-                app.UseDeveloperExceptionPage(); // Детальные ошибки в браузере
-                // Если Swagger:
-                // app.UseSwagger();
-                // app.UseSwaggerUI();
+                app.UseDeveloperExceptionPage();
+            }
+            else
+            {
             }
 
-            app.UseHttpsRedirection(); // HTTP -> HTTPS
-            app.UseStaticFiles();      // Для CSS/JS/изображений в wwwroot
-            app.UseRouting();          // Роутинг
+            app.UseHttpsRedirection();
+            app.UseStaticFiles();
 
-            // Маппит MVC-роуты (default: / -> Home/Index)
+            app.UseRouting();
+
+           
+            app.UseAuthentication();
+            app.UseAuthorization();
+
+            
             app.MapControllerRoute(
                 name: "default",
-                pattern: "{controller=Home}/{action=Index}/{id?}"); // Стандартный роут для MVC
-
-            // Опционально: Для Razor Pages, если используешь
-            // app.MapRazorPages();
+                pattern: "{controller=Account}/{action=Login}/{id?}");
 
             app.Run();
         }
