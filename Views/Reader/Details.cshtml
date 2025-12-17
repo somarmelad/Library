@@ -1,0 +1,87 @@
+﻿@model Library2.Models.Book
+@* 
+*@
+
+@{
+    ViewData["Title"] = "Детали книги";
+}
+
+<h1>Детали книги</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-8">
+        <dl class="row">
+            <dt class="col-sm-3">
+                @Html.DisplayNameFor(model => model.Title)
+            </dt>
+            <dd class="col-sm-9">
+                @Html.DisplayFor(model => model.Title)
+            </dd>
+
+            <dt class="col-sm-3">
+                @Html.DisplayNameFor(model => model.Publisher)
+            </dt>
+            <dd class="col-sm-9">
+                @Html.DisplayFor(model => model.Publisher.Name)
+            </dd>
+
+            <dt class="col-sm-3">
+                @Html.DisplayNameFor(model => model.Quantity)
+            </dt>
+            <dd class="col-sm-9">
+                @Html.DisplayFor(model => model.Quantity)
+            </dd>
+
+            <dt class="col-sm-3">
+                @Html.DisplayNameFor(model => model.Annotation)
+            </dt>
+            <dd class="col-sm-9">
+                @Html.DisplayFor(model => model.Annotation)
+            </dd>
+
+            <dt class="col-sm-3">
+                Авторы
+            </dt>
+            <dd class="col-sm-9">
+                @if (Model.BookAuthors != null && Model.BookAuthors.Any())
+                {
+                    <ul class="list-unstyled">
+                        @foreach (var bookAuthor in Model.BookAuthors)
+                        {
+                            <li>@bookAuthor.Author.LastName @bookAuthor.Author.FirstName @bookAuthor.Author.MiddleName</li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <span>Авторы не указаны</span>
+                }
+            </dd>
+
+            <dt class="col-sm-3">
+                Жанры
+            </dt>
+            <dd class="col-sm-9">
+                @if (Model.BookGenres != null && Model.BookGenres.Any())
+                {
+                    <ul class="list-unstyled">
+                        @foreach (var bookGenre in Model.BookGenres)
+                        {
+                            <li>@bookGenre.Genre.Name</li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <span>Жанры не указаны</span>
+                }
+            </dd>
+        </dl>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a asp-action="Edit" asp-route-id="@Model.IdBook" class="btn btn-primary">Редактировать</a> |
+    <a asp-action="Index" class="btn btn-secondary">Назад к списку книг</a>
+</div>

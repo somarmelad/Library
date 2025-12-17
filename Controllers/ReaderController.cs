@@ -17,7 +17,6 @@ namespace Library2.Controllers
             _context = context;
         }
 
-        // Поиск ID читателя по логину из Claims
         private async Task<int?> GetReaderIdAsync(string login)
         {
             if (string.IsNullOrEmpty(login)) return null;
@@ -32,7 +31,6 @@ namespace Library2.Controllers
         {
             ViewData["CurrentFilter"] = searchString;
 
-            // Получаем логин текущего пользователя (Identity обычно хранит его в ClaimTypes.Name)
             var userLogin = User.Identity?.Name ?? User.FindFirstValue(ClaimTypes.Name);
 
             var booksQuery = _context.Books
@@ -56,14 +54,12 @@ namespace Library2.Controllers
 
             var booksList = await booksQuery.OrderBy(b => b.Title).ToListAsync();
 
-            // Считаем активные бронирования (через словарь для скорости)
             var reservationsDict = await _context.Reservations
                 .Where(r => r.Status == "Pending" || r.Status == "Ready")
                 .GroupBy(r => r.BookId)
                 .Select(g => new { BookId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.BookId, x => x.Count);
 
-            // Получаем список того, что забронировал именно этот читатель
             var readerId = await GetReaderIdAsync(userLogin);
             var myReservedIds = new List<int>();
 
@@ -79,6 +75,47 @@ namespace Library2.Controllers
             ViewBag.MyReservedIds = myReservedIds;
 
             return View("Index", booksList);
+        }
+
+        // GET: Reader/Details/5
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var book = await _context.Books
+                .Include(b => b.Publisher)
+                .Include(b => b.BookAuthors)
+                    .ThenInclude(ba => ba.Author)
+                .Include(b => b.BookGenres)
+                    .ThenInclude(bg => bg.Genre)
+                .Include(b => b.BookLoans)
+                .FirstOrDefaultAsync(m => m.IdBook == id);
+
+            if (book == null)
+            {
+                return NotFound();
+            }
+
+            int loanedCount = book.BookLoans?.Count(bl => bl.ReturnDate == null) ?? 0;
+            int reservedCount = await _context.Reservations
+                .CountAsync(r => r.BookId == id && (r.Status == "Pending" || r.Status == "Ready"));
+
+            ViewBag.AvailableCount = book.Quantity - loanedCount - reservedCount;
+
+            var userLogin = User.Identity?.Name ?? User.FindFirstValue(ClaimTypes.Name);
+            var readerId = await GetReaderIdAsync(userLogin);
+
+            ViewBag.IsReservedByMe = false;
+            if (readerId.HasValue)
+            {
+                ViewBag.IsReservedByMe = await _context.Reservations
+                    .AnyAsync(r => r.BookId == id && r.ReaderId == readerId.Value && (r.Status == "Pending" || r.Status == "Ready"));
+            }
+
+            return View(book);
         }
 
         // POST: Reader/Reserve
@@ -101,7 +138,6 @@ namespace Library2.Controllers
 
             if (book == null) return NotFound();
 
-            // Проверка: а не забронировал ли он уже?
             var alreadyReserved = await _context.Reservations
                 .AnyAsync(r => r.BookId == BookId && r.ReaderId == readerId.Value && (r.Status == "Pending" || r.Status == "Ready"));
 
@@ -111,7 +147,6 @@ namespace Library2.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Считаем остаток
             int loaned = book.BookLoans.Count();
             int reserved = await _context.Reservations
                 .CountAsync(r => r.BookId == BookId && (r.Status == "Pending" || r.Status == "Ready"));
