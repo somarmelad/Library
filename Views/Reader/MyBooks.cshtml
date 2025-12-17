@@ -1,82 +1,155 @@
-﻿@{
-    ViewData["Title"] = "Моя история";
-    var loans = ViewBag.Loans as List<Library2.Models.BookLoan> ?? new List<Library2.Models.BookLoan>();
-    var reservations = ViewBag.Reservations as List<Library2.Models.Reservation> ?? new List<Library2.Models.Reservation>();
+﻿@using Library2.Models
+@{
+    ViewData["Title"] = "Мои книги";
+    var loans = ViewBag.Loans as List<BookLoan> ?? new List<BookLoan>();
+    var reservations = ViewBag.Reservations as List<Reservation> ?? new List<Reservation>();
 }
 
 <div class="container mt-4">
-    <h2>Личный кабинет (Читатель ID: @ViewData["DebugReaderId"])</h2>
-
-    <div class="alert alert-info">
-        Найдено выдач: @loans.Count | Найдено броней: @reservations.Count
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-journal-bookmark-fill text-primary"></i> Личный кабинет</h2>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-search"></i> В каталог
+        </a>
     </div>
 
-    <ul class="nav nav-tabs" id="myTab" role="tablist">
-        <li class="nav-item shadow-sm">
-            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-res">Мои брони (@reservations.Count)</button>
+    <ul class="nav nav-tabs" id="readerTab" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" id="res-tab" data-bs-toggle="tab" data-bs-target="#tab-res" type="button" role="tab">
+                Мои бронирования (@reservations.Count(r => r.Status != "Cancelled"))
+            </button>
         </li>
-        <li class="nav-item shadow-sm">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-loans">История выдач (@loans.Count)</button>
+        <li class="nav-item">
+            <button class="nav-link" id="loans-tab" data-bs-toggle="tab" data-bs-target="#tab-loans" type="button" role="tab">
+                История выдач (@loans.Count)
+            </button>
         </li>
     </ul>
 
-    <div class="tab-content border-start border-end border-bottom p-3 bg-white">
-        <div class="tab-pane fade show active" id="tab-res">
+    <div class="tab-content border-start border-end border-bottom p-4 bg-white shadow-sm rounded-bottom">
+
+        <div class="tab-pane fade show active" id="tab-res" role="tabpanel">
             @if (reservations.Any())
             {
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Книга</th>
-                            <th>Дата брони</th>
-                            <th>Статус</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var res in reservations)
-                        {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
                             <tr>
-                                <td>@(res.Book?.Title ?? "ID книги: " + res.BookId)</td>
-                                <td>@res.ReservationDate.ToString("g")</td>
-                                <td><span class="badge bg-warning text-dark">@res.Status</span></td>
-
+                                <th>Книга</th>
+                                <th>Дата заказа</th>
+                                <th>Срок ожидания</th>
+                                <th>Статус</th>
+                                <th class="text-end">Действия</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in reservations)
+                            {
+                                <tr class="@(item.Status == "Cancelled" ? "table-light opacity-75" : "")">
+                                    <td class="fw-bold">@(item.Book?.Title ?? "Без названия")</td>
+                                    <td>@item.ReservationDate.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td>
+                                        @if (item.Status == "Pending" || item.Status == "Ready")
+                                        {
+                                            <span class="text-danger fw-bold">
+                                                <i class="bi bi-clock"></i> До @(item.ExpirationDate.HasValue? item.ExpirationDate.Value.ToString("dd.MM.yyyy") : "—")
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @{
+                                            var badgeClass = item.Status == "Pending" ? "bg-warning text-dark" :
+                                            item.Status == "Ready" ? "bg-success" :
+                                            item.Status == "Cancelled" ? "bg-danger" :
+                                            item.Status == "Issued" ? "bg-info text-dark" : "bg-secondary";
+                                        }
+                                        <span class="badge @badgeClass">@item.Status</span>
+                                    </td>
+                                    <td class="text-end">
+                                        @if (item.Status == "Pending" || item.Status == "Ready")
+                                        {
+                                            <form asp-action="CancelReservation" asp-route-id="@item.IdReservation" method="post"
+                                                  onsubmit="return confirm('Вы уверены, что хотите отменить бронь?');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-x-circle"></i> Отменить
+                                                </button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
             }
             else
             {
-                <p class="text-center p-4">У вас пока нет активных броней.</p>
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox text-muted display-4"></i>
+                    <p class="mt-3 text-muted">У вас нет активных бронирований.</p>
+                </div>
             }
         </div>
 
-        <div class="tab-pane fade" id="tab-loans">
+        <div class="tab-pane fade" id="tab-loans" role="tabpanel">
             @if (loans.Any())
             {
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Книга</th>
-                            <th>Выдано</th>
-                            <th>Возвращено</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var loan in loans)
-                        {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
                             <tr>
-                                <td>@(loan.Book?.Title ?? "Книга удалена")</td>
-                                <td>@loan.LoanDate.ToShortDateString()</td>
-                                <td>@(loan.ReturnDate?.ToShortDateString() ?? "На руках")</td>
+                                <th>Книга</th>
+                                <th>Дата выдачи</th>
+                                <th>Дата возврата</th>
+                                <th>Статус</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach (var loan in loans)
+                            {
+                                <tr>
+                                    <td>@(loan.Book?.Title ?? "—")</td>
+                                    <td>@loan.LoanDate.ToShortDateString()</td>
+                                    <td>
+                                        @if (loan.ReturnDate.HasValue)
+                                        {
+                                            <span class="text-success">@loan.ReturnDate.Value.ToShortDateString()</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-info text-dark">На руках</span>
+                                            <br />
+                                            <small class="text-muted">Нужно вернуть до: @loan.LoanDate.AddDays(14).ToShortDateString()</small>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        @if (!loan.ReturnDate.HasValue)
+                                        {
+                                            <form asp-action="ExtendLoan" asp-route-id="@loan.IdBookLoan" method="post" style="display:inline;">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-calendar-plus"></i> Продлить
+                                                </button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
             }
             else
             {
-                <p class="text-center p-4">История выдач пуста.</p>
+                <div class="text-center py-5">
+                    <i class="bi bi-archive text-muted display-4"></i>
+                    <p class="mt-3 text-muted">Вы еще не брали книги.</p>
+                </div>
             }
         </div>
     </div>

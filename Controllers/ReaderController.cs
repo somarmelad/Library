@@ -208,5 +208,36 @@ namespace Library2.Controllers
 
             return RedirectToAction(nameof(MyBooks));
         }
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ExtendLoan(int id)
+        {   
+            var loan = await _context.BookLoans
+                .FirstOrDefaultAsync(l => l.IdBookLoan == id && l.ReturnDate == null);
+
+            if (loan == null)
+            {
+                TempData["Error"] = "Выдача не найдена или книга уже возвращена.";
+                return RedirectToAction(nameof(MyBooks));
+            }
+
+            var userLogin = User.Identity?.Name;
+            var reader = await _context.Readers.FirstOrDefaultAsync(r => r.Login == userLogin);
+
+            if (reader == null || loan.ReaderId != reader.IdReader)
+            {
+                TempData["Error"] = "Ошибка доступа.";
+                return RedirectToAction(nameof(MyBooks));
+            }
+
+
+            loan.LoanDate = DateTime.Now; 
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Срок пользования книгой продлен на 14 дней!";
+            return RedirectToAction(nameof(MyBooks));
+        }
     }
 }

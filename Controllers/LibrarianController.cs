@@ -25,9 +25,26 @@ namespace Library2.Controllers
 
         // GET: Librarian/Index (Теперь это навигационная страница)
         [HttpGet]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            
+            var lastMonth = DateTime.Now.AddDays(-30);
+
+            var popularBooksData = await _context.BookLoans
+                .Include(l => l.Book)
+                .Where(l => l.LoanDate >= lastMonth)
+                .GroupBy(l => l.Book.Title)
+                .Select(g => new
+                {
+                    Title = g.Key,
+                    Count = g.Count()
+                })
+                .OrderByDescending(x => x.Count)
+                .Take(5) 
+                .ToListAsync();
+
+            ViewBag.ChartLabels = popularBooksData.Select(x => x.Title).ToList();
+            ViewBag.ChartValues = popularBooksData.Select(x => x.Count).ToList();
+
             return View();
         }
 

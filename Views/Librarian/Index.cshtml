@@ -55,5 +55,65 @@
                 </div>
             </div>
         </div>
+        <div class="container mt-4">
+            <h2 class="mb-4">Статистика библиотеки</h2>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-white fw-bold">
+                            <i class="bi bi-bar-chart-line"></i> Популярные книги (за 30 дней)
+                        </div>
+                        <div class="card-body">
+                            <canvas id="popularBooksChart" style="max-height: 400px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="list-group shadow-sm">
+                        <a asp-action="BookList" class="list-group-item list-group-item-action">Управление книгами</a>
+                        <a asp-action="Reservations" class="list-group-item list-group-item-action">Бронирования</a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        const ctx = document.getElementById('popularBooksChart').getContext('2d');
+
+        const labels = @Html.Raw(Json.Serialize(ViewBag.ChartLabels));
+        const values = @Html.Raw(Json.Serialize(ViewBag.ChartValues));
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Количество выдач',
+                    data: values,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y', 
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    </script>
+}
