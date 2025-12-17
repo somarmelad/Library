@@ -172,5 +172,31 @@ namespace Library2.Controllers
 
             return RedirectToAction(nameof(Index));
         }
+
+
+        // GET: Reader/MyBooks
+        public async Task<IActionResult> MyBooks()
+        {
+            var userLogin = User.Identity?.Name ?? User.FindFirstValue(ClaimTypes.Name);
+            var readerId = await GetReaderIdAsync(userLogin);
+            if (!readerId.HasValue) return NotFound();
+
+            var loans = await _context.BookLoans
+                .Include(l => l.Book)
+                .Where(l => l.ReaderId == readerId.Value)
+                .OrderByDescending(l => l.LoanDate)
+                .ToListAsync();
+
+            var reservations = await _context.Reservations
+                .Include(r => r.Book)
+                .Where(r => r.ReaderId == readerId.Value)
+                .OrderByDescending(r => r.ReservationDate)
+                .ToListAsync();
+
+            ViewBag.Loans = loans;
+            ViewBag.Reservations = reservations;
+
+            return View("MyBooks");
+        }
     }
 }

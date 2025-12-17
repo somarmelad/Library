@@ -1,42 +1,41 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Library2</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/Library2.styles.css" asp-append-version="true" />
 </head>
-<body>
+<body class="bg-light">
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom shadow-sm mb-4">
             <div class="container">
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                    </ul>
+                @* Единственная ссылка в хедере - на Главную *@
+                <a class="navbar-brand fw-bold text-primary" asp-controller="Home" asp-action="Index" style="font-size: 1.5rem;">
+                    Library
+                </a>
 
+                <div class="d-flex align-items-center">
                     @if (User.Identity.IsAuthenticated)
                     {
-                        <ul class="navbar-nav">
-                            <li class="nav-item">
-                                <form asp-controller="Account" asp-action="Logout" method="get">
-                                    <span class="navbar-text mr-3">
-                                        Привет, @User.Identity.Name!
-                                    </span>
-                                    <button type="submit" class="btn btn-outline-danger">
-                                        Выйти
-                                    </button>
-                                </form>
-                            </li>
-                        </ul>
+                        <span class="navbar-text me-3 d-none d-md-inline">
+                            Вы вошли как: <strong>@User.Identity.Name</strong>
+                        </span>
+                        <a class="btn btn-outline-danger btn-sm" asp-controller="Account" asp-action="Logout">Выйти</a>
+                    }
+                    else
+                    {
+                        <a class="btn btn-primary btn-sm" asp-controller="Account" asp-action="Login">Войти</a>
                     }
                 </div>
             </div>
         </nav>
     </header>
+
     <div class="container">
         <main role="main" class="pb-3">
+            @* Сообщения об успехе или ошибках *@
             @if (TempData["Error"] != null)
             {
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -51,15 +50,17 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             }
+
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - Library2 - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <footer class="border-top footer text-muted mt-5 py-3 bg-white">
+        <div class="container text-center">
+            &copy; 2025 - Library2
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

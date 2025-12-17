@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace Library2.Controllers
@@ -26,7 +27,7 @@ namespace Library2.Controllers
         [HttpGet]
         public IActionResult Index()
         {
-            // Просто возвращаем представление для навигационной панели
+            
             return View();
         }
 
@@ -37,13 +38,10 @@ namespace Library2.Controllers
 
             IQueryable<Book> books = _context.Books;
 
-            // Включаем все связанные данные для полного отображения в таблице управления
             books = books
                 .Include(b => b.Publisher)
                 .Include(b => b.BookAuthors)
                     .ThenInclude(ba => ba.Author)
-                // Фильтруем активные выдачи: те, которые не возвращены (ReturnDate == null).
-                // Внимание: В BookLoan нет IsReserved. Все незавершенные считаются активными/бронями.
                 .Include(b => b.BookLoans.Where(bl => bl.ReturnDate == null));
 
             if (!string.IsNullOrEmpty(searchString))
@@ -60,7 +58,6 @@ namespace Library2.Controllers
                 );
             }
 
-            // Используем представление LibrarianList.cshtml
             return View(await books.OrderBy(b => b.Title).ToListAsync());
         }
 
@@ -71,7 +68,6 @@ namespace Library2.Controllers
             {
                 return NotFound();
             }
-            // Включаем Reader через BookLoan.Reader, так как BookLoan.User не существует
             var book = await _context.Books
                 .Include(b => b.Publisher)
                 .Include(b => b.BookAuthors)
@@ -79,7 +75,7 @@ namespace Library2.Controllers
                 .Include(b => b.BookGenres)
                     .ThenInclude(bg => bg.Genre)
                 .Include(b => b.BookLoans)
-                    .ThenInclude(bl => bl.Reader) // Используем Reader
+                    .ThenInclude(bl => bl.Reader) 
                 .FirstOrDefaultAsync(m => m.IdBook == id);
 
             if (book == null)
@@ -92,7 +88,6 @@ namespace Library2.Controllers
         // GET: Librarian/Create
         public async Task<IActionResult> Create()
         {
-            // Загрузка списков для DropDown/MultiSelect
             ViewBag.Publishers = new SelectList(await _context.Publishers.ToListAsync(), "IdPublisher", "Name");
 
             var authorsList = await _context.Authors
@@ -184,7 +179,6 @@ namespace Library2.Controllers
 
             if (book == null) return NotFound();
 
-            // Загрузка списков и выделение текущих значений
             ViewBag.Publishers = new SelectList(await _context.Publishers.ToListAsync(), "IdPublisher", "Name", book.PublisherId);
 
             var authorsList = await _context.Authors
@@ -224,10 +218,8 @@ namespace Library2.Controllers
             {
                 try
                 {
-                    // Обновляем саму книгу
                     _context.Update(book);
 
-                    // Управление связями Авторов
                     var oldAuthors = _context.BookAuthors.Where(ba => ba.BookId == book.IdBook);
                     _context.BookAuthors.RemoveRange(oldAuthors);
 
@@ -236,7 +228,6 @@ namespace Library2.Controllers
                         _context.BookAuthors.Add(new BookAuthor { BookId = book.IdBook, AuthorId = authorId });
                     }
 
-                    // Управление связями Жанров
                     var oldGenres = _context.BookGenres.Where(bg => bg.BookId == book.IdBook);
                     _context.BookGenres.RemoveRange(oldGenres);
 
@@ -262,7 +253,6 @@ namespace Library2.Controllers
                 }
             }
 
-            // Перезагрузка ViewBag при ошибке
             ViewBag.Publishers = new SelectList(await _context.Publishers.ToListAsync(), "IdPublisher", "Name", book.PublisherId);
             var authorsList = await _context.Authors
                 .Select(a => new SelectListItem
@@ -359,7 +349,6 @@ namespace Library2.Controllers
 
             string finalMiddleName = string.IsNullOrWhiteSpace(middleName) ? null : middleName.Trim();
 
-            // Проверка на существование дубликата
             bool exists = await _context.Authors.AnyAsync(a =>
                 a.FirstName.ToLower() == firstName.Trim().ToLower() &&
                 a.LastName.ToLower() == lastName.Trim().ToLower() &&
@@ -440,6 +429,80 @@ namespace Library2.Controllers
             {
                 return Json(new { success = false, message = "Ошибка при сохранении жанра: " + ex.Message });
             }
+        }
+
+        // GET: Librarian/Reservations
+        public async Task<IActionResult> Reservations()
+        {
+            var reservations = await _context.Reservations
+                .Include(r => r.Book)
+                .Include(r => r.Reader)
+                .Where(r => r.Status == "Pending" || r.Status == "Ready")
+                .OrderByDescending(r => r.ReservationDate)
+                .ToListAsync();
+
+            return View(reservations);
+        }
+
+        // POST: Librarian/ConfirmReservation
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ConfirmReservation(int id)
+        {
+            var reservation = await _context.Reservations.FindAsync(id);
+            if (reservation == null) return NotFound();
+
+            reservation.Status = "Ready";
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Reservations));
+        }
+
+        private async Task<int?> GetEmployeeIdAsync(string login)
+        {
+            if (string.IsNullOrEmpty(login)) return null;
+
+            var employee = await _context.Employees
+                .FirstOrDefaultAsync(e => e.Login == login); 
+            return employee?.IdEmployee;
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> IssueReservation(int id)
+        {
+            var reservation = await _context.Reservations
+                .Include(r => r.Book)
+                .Include(r => r.Reader)
+                .FirstOrDefaultAsync(r => r.IdReservation == id);
+
+            if (reservation == null) return NotFound();
+
+            var userLogin = User.Identity?.Name ?? User.FindFirstValue(ClaimTypes.Name);
+            var employeeId = await GetEmployeeIdAsync(userLogin);
+
+            if (!employeeId.HasValue)
+            {
+                TempData["Error"] = "Ошибка: профиль сотрудника не найден в базе данных.";
+                return RedirectToAction(nameof(Reservations));
+            }
+
+            var loan = new BookLoan
+            {
+                BookId = reservation.BookId,
+                ReaderId = reservation.ReaderId ?? 0,
+                LoanDate = DateTime.Now,
+                EmployeeId = employeeId.Value 
+            };
+
+            reservation.Status = "Issued";
+
+            _context.BookLoans.Add(loan);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = $"Книга '{reservation.Book.Title}' выдана сотрудником (ID: {employeeId.Value})";
+
+            return RedirectToAction(nameof(Reservations));
         }
     }
 }

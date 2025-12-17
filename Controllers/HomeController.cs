@@ -21,31 +21,29 @@ namespace Library2.Controllers
 
         // GET: /Home/Index
         // Выполняет маршрутизацию в зависимости от роли пользователя
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-           
+            if (!User.Identity.IsAuthenticated)
+            {
+                return View();
+            }
 
+           
             if (User.IsInRole("Librarian"))
             {
-               
-                return RedirectToAction("Dashboard", "Librarian");
-            }
-            else if (User.IsInRole("Reader"))
-            {
-                
-                return RedirectToAction("Index", "Books");
-            }
-            else
-            {
-                
-                _logger.LogWarning("Пользователь {UserName} аутентифицирован, но не имеет заданной роли.", User.Identity.Name);
-                return RedirectToAction("Logout", "Account");
+                return RedirectToAction("Index", "Librarian");
             }
 
             
+            if (User.IsInRole("Reader"))
+            {
+                return RedirectToAction("Index", "Reader");
+            }
+
+            return View();
         }
 
-        
+
         [Authorize(Roles = "Librarian")]
         public async Task<IActionResult> DbStatusCheck()
         {

@@ -4,7 +4,6 @@
 
 <div class="container mt-5">
     <h1 class="mb-4">Панель управления Библиотекаря</h1>
-    <p class="lead">Быстрый доступ к основным функциям библиотеки.</p>
 
     <hr />
 
@@ -28,6 +27,18 @@
                     <p class="card-text">Просмотр списка всех зарегистрированных читателей. Добавление, редактирование, удаление и просмотр их истории.</p>
                     <a asp-controller="Readers" asp-action="Index" class="btn btn-success mt-3">
                         Перейти к Читателям
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-4">
+            <div class="card shadow-sm h-100 border-info">
+                <div class="card-body">
+                    <h5 class="card-title text-info">Бронирования</h5>
+                    <p class="card-text small">Заявки от читателей, подготовка книг к выдаче.</p>
+                    <a asp-controller="Librarian" asp-action="Reservations" class="btn btn-info text-white mt-3 w-100">
+                        Смотреть брони
                     </a>
                 </div>
             </div>
