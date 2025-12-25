@@ -22,7 +22,7 @@ namespace Library2.Controllers
             _context = context;
         }
 
-        // GET: Librarian/Index (Теперь это навигационная страница)
+        // GET: Librarian/Index 
         [HttpGet]
         public async Task<IActionResult> Index()
         {
@@ -123,63 +123,97 @@ namespace Library2.Controllers
         // POST: Librarian/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Book book, List<int> selectedAuthors, List<int> selectedGenres)
+        public async Task<IActionResult> Create(Book book, List<int> selectedAuthors, List<int> selectedGenres, int quantity)
         {
-            if (selectedAuthors == null || selectedAuthors.Count == 0)
-            {
+            // 1. Валидация
+            if (selectedAuthors == null || !selectedAuthors.Any())
                 ModelState.AddModelError("selectedAuthors", "Выберите хотя бы одного автора.");
-            }
-            if (selectedGenres == null || selectedGenres.Count == 0)
-            {
+
+            if (selectedGenres == null || !selectedGenres.Any())
                 ModelState.AddModelError("selectedGenres", "Выберите хотя бы один жанр.");
-            }
+
+            if (quantity <= 0)
+                ModelState.AddModelError("quantity", "Количество копий должно быть больше 0.");
 
             if (ModelState.IsValid)
             {
+                // Создаем стратегию выполнения, которую требует MySQL
+                var strategy = _context.Database.CreateExecutionStrategy();
+
                 try
                 {
-                    _context.Add(book);
-                    await _context.SaveChangesAsync();
-
-                    foreach (var authorId in selectedAuthors)
+                    await strategy.ExecuteAsync(async () =>
                     {
-                        _context.BookAuthors.Add(new BookAuthor { BookId = book.IdBook, AuthorId = authorId });
-                    }
+                        // Открываем транзакцию внутри стратегии
+                        using var transaction = await _context.Database.BeginTransactionAsync();
+                        try
+                        {
+                            for (int i = 0; i < quantity; i++)
+                            {
+                                var newCopy = new Book
+                                {
+                                    Title = book.Title,
+                                    PublisherId = book.PublisherId,
+                                    Annotation = book.Annotation,
+                                    Status = BookStatus.Available
+                                };
 
-                    foreach (var genreId in selectedGenres)
-                    {
-                        _context.BookGenres.Add(new BookGenre { BookId = book.IdBook, GenreId = genreId });
-                    }
+                                _context.Books.Add(newCopy);
+                                await _context.SaveChangesAsync();
 
-                    await _context.SaveChangesAsync();
+                                if (selectedAuthors != null)
+                                {
+                                    foreach (var authorId in selectedAuthors)
+                                    {
+                                        _context.BookAuthors.Add(new BookAuthor { BookId = newCopy.IdBook, AuthorId = authorId });
+                                    }
+                                }
+
+                                if (selectedGenres != null)
+                                {
+                                    foreach (var genreId in selectedGenres)
+                                    {
+                                        _context.BookGenres.Add(new BookGenre { BookId = newCopy.IdBook, GenreId = genreId });
+                                    }
+                                }
+
+                                // Сохраняем связи для текущего экземпляра
+                                await _context.SaveChangesAsync();
+                            }
+
+                            await transaction.CommitAsync();
+                        }
+                        catch
+                        {
+                            await transaction.RollbackAsync();
+                            throw; // Пробрасываем ошибку выше для обработки стратегией
+                        }
+                    });
+
                     return RedirectToAction(nameof(Index));
-                }
-                catch (DbUpdateException dbEx)
-                {
-                    Console.WriteLine("Ошибка сохранения БД: " + dbEx.InnerException?.Message ?? dbEx.Message);
-                    ModelState.AddModelError("", "Ошибка сохранения книги в базу данных. Проверьте, существует ли выбранный Издатель.");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Общая ошибка сохранения: " + ex.Message);
-                    ModelState.AddModelError("", "Произошла непредвиденная ошибка при добавлении книги.");
+                    ModelState.AddModelError("", "Ошибка базы данных: " + ex.Message);
                 }
             }
 
-            // Перезагрузка ViewBag при ошибке
+            // Если что-то пошло не так, заново заполняем ViewBag для формы
             ViewBag.Publishers = new SelectList(await _context.Publishers.ToListAsync(), "IdPublisher", "Name", book.PublisherId);
+
             var authorsList = await _context.Authors
                 .Select(a => new SelectListItem
                 {
                     Value = a.IdAuthor.ToString(),
                     Text = $"{a.FirstName} {a.LastName}" + (!string.IsNullOrEmpty(a.MiddleName) ? $" {a.MiddleName}" : "")
-                })
-                .ToListAsync();
+                }).ToListAsync();
             ViewBag.Authors = new MultiSelectList(authorsList, "Value", "Text", selectedAuthors);
+
             ViewBag.Genres = new MultiSelectList(await _context.Genres.ToListAsync(), "IdGenre", "Name", selectedGenres);
 
             return View(book);
         }
+
 
         // GET: Librarian/Edit/5
         public async Task<IActionResult> Edit(int? id)

@@ -6,6 +6,19 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Library2.Models
 {
+
+    public enum BookStatus
+    {
+        [Display(Name = "В наличии")]
+        Available,
+
+        [Display(Name = "Зарезервирована")]
+        Reserved,
+
+        [Display(Name = "Выдана")]
+        Issued
+    }
+
     public class Book
     {
         [Key]
@@ -20,12 +33,15 @@ namespace Library2.Models
         [ValidateNever]
         [ForeignKey("PublisherId")]
         public virtual Publisher Publisher { get; set; }
+        public int GenreId { get; set; }
+        [ValidateNever]
+        [ForeignKey("GenreId")]
+        public virtual Genre Genre { get; set; }
 
-        [Required(ErrorMessage = "Количество обязательно")]
-        [Range(1, int.MaxValue, ErrorMessage = "Количество должно быть > 0")]
-        public int Quantity { get; set; } = 1;
+        [Required(ErrorMessage = "Статус обязателен")]
+        public BookStatus Status { get; set; } = BookStatus.Available;
 
-      
+
         [Display(Name = "Аннотация")]
         
         public string? Annotation { get; set; }

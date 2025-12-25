@@ -42,9 +42,8 @@
                                 </div>
 
                                 <div class="form-floating mb-3">
-                                    <input asp-for="Quantity" type="number" class="form-control rounded-3" placeholder="Кол-во" />
-                                    <label asp-for="Quantity">Количество экземпляров</label>
-                                    <span asp-validation-for="Quantity" class="text-danger small"></span>
+                                    <input type="number" name="quantity" class="form-control" value="1" min="1" />
+                                    <label for="quantity">Количество экземпляров (копий)</label>
                                 </div>
 
                                 <div class="mb-3">

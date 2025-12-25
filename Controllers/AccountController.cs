@@ -1,5 +1,5 @@
 ﻿using Library2.Data;
-using Library2.Helpers; // Предполагается, что PasswordHasher находится здесь
+using Library2.Helpers; 
 using Library2.Models;
 using Library2.ViewModels;
 using Microsoft.AspNetCore.Authentication;
@@ -39,7 +39,6 @@ namespace Library2.Controllers
         {
             if (ModelState.IsValid)
             {
-                // Проверка на существующий логин среди читателей и сотрудников
                 bool loginExists = await _context.Readers.AnyAsync(r => r.Login == model.Login) ||
                                     await _context.Employees.AnyAsync(e => e.Login == model.Login);
 
@@ -57,7 +56,6 @@ namespace Library2.Controllers
 
                 string passwordHash = PasswordHasher.HashPassword(model.Password);
 
-                // Создание нового читателя
                 var newReader = new Reader
                 {
                     Login = model.Login,
@@ -73,7 +71,6 @@ namespace Library2.Controllers
                 _context.Readers.Add(newReader);
                 await _context.SaveChangesAsync();
 
-                // Создание Claims для аутентификации
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.NameIdentifier, newReader.IdReader.ToString()),
@@ -85,7 +82,6 @@ namespace Library2.Controllers
                 var claimsIdentity = new ClaimsIdentity(claims, "CookieAuth");
                 await HttpContext.SignInAsync("CookieAuth", new ClaimsPrincipal(claimsIdentity));
 
-                // Перенаправление читателя на его страницу
                 return RedirectToAction("Index", "Reader");
             }
 
@@ -123,14 +119,12 @@ namespace Library2.Controllers
                     userType = "Librarian";
                 }
 
-                // Проверка учетных данных
                 if (string.IsNullOrEmpty(role) || !PasswordHasher.VerifyPassword(model.Password, passwordHash))
                 {
                     ModelState.AddModelError(string.Empty, "Неверный логин или пароль.");
                     return View(model);
                 }
 
-                // Создание Claims
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
@@ -139,32 +133,26 @@ namespace Library2.Controllers
                     new Claim("UserType", userType)
                 };
 
-                // Аутентификация
                 var claimsIdentity = new ClaimsIdentity(claims, "CookieAuth");
 
-                // ИСПРАВЛЕНИЕ: Убираем RememberMe и явно устанавливаем IsPersistent = false
+                
                 var authProperties = new AuthenticationProperties
                 {
-                    // Пользователь не будет запомнен после закрытия браузера
                     IsPersistent = false
                 };
 
                 await HttpContext.SignInAsync("CookieAuth", new ClaimsPrincipal(claimsIdentity), authProperties);
 
-                // Логика перенаправления
                 if (userType == "Librarian")
                 {
-                    // Перенаправление библиотекаря
                     return RedirectToAction("Index", "Librarian");
                 }
                 else if (userType == "Reader")
                 {
-                    // Перенаправление читателя
                     return RedirectToAction("Index", "Reader");
                 }
                 else
                 {
-                    // Резервное перенаправление
                     return RedirectToAction("Index", "Home");
                 }
             }

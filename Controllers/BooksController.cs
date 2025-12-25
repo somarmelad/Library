@@ -101,63 +101,78 @@ namespace Library2.Controllers
 
 
         // POST: Books/Create
-        
+
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Book book, List<int> selectedAuthors, List<int> selectedGenres)
+        public async Task<IActionResult> Create(Book book, List<int> selectedAuthors, List<int> selectedGenres, int quantity)
         {
-
-            if (selectedAuthors == null || selectedAuthors.Count == 0)
-            {
+            // 1. Валидация
+            if (selectedAuthors == null || !selectedAuthors.Any())
                 ModelState.AddModelError("selectedAuthors", "Выберите хотя бы одного автора.");
-            }
-            if (selectedGenres == null || selectedGenres.Count == 0)
-            {
-                ModelState.AddModelError("selectedGenres", "Выберите хотя бы один жанр.");
-            }
 
-            
+            if (selectedGenres == null || !selectedGenres.Any())
+                ModelState.AddModelError("selectedGenres", "Выберите хотя бы один жанр.");
+
+            if (quantity <= 0)
+                ModelState.AddModelError("quantity", "Количество копий должно быть больше 0.");
 
             if (ModelState.IsValid)
             {
+                // Используем транзакцию для безопасности данных
+                using var transaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    _context.Add(book);
+                    for (int i = 0; i < quantity; i++)
+                    {
+                        // Создаем новый объект книги для каждого экземпляра
+                        var newCopy = new Book
+                        {
+                            Title = book.Title,
+                            PublisherId = book.PublisherId,
+                            Annotation = book.Annotation,
+                            Status = BookStatus.Available // Устанавливаем статус "Доступна"
+                        };
+
+                        _context.Books.Add(newCopy);
+
+                        // Сохраняем, чтобы получить сгенерированный IdBook для связей
+                        await _context.SaveChangesAsync();
+
+                        // Добавляем авторов для этого конкретного экземпляра
+                        foreach (var authorId in selectedAuthors)
+                        {
+                            _context.BookAuthors.Add(new BookAuthor
+                            {
+                                BookId = newCopy.IdBook,
+                                AuthorId = authorId
+                            });
+                        }
+
+                        // Добавляем жанры для этого конкретного экземпляра
+                        foreach (var genreId in selectedGenres)
+                        {
+                            _context.BookGenres.Add(new BookGenre
+                            {
+                                BookId = newCopy.IdBook,
+                                GenreId = genreId
+                            });
+                        }
+                    }
+
+                    // Финальное сохранение всех связей и фиксация транзакции
                     await _context.SaveChangesAsync();
-
-                    if (book.IdBook == 0)
-                    {
-                        throw new InvalidOperationException("Книга была добавлена, но IdBook не был сгенерирован.");
-                    }
-
-                    foreach (var authorId in selectedAuthors)
-                    {
-                        _context.BookAuthors.Add(new BookAuthor { BookId = book.IdBook, AuthorId = authorId });
-                    }
-
-                    foreach (var genreId in selectedGenres)
-                    {
-                        _context.BookGenres.Add(new BookGenre { BookId = book.IdBook, GenreId = genreId });
-                    }
-
-                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
 
                     return RedirectToAction(nameof(Index));
                 }
-                catch (DbUpdateException dbEx)
-                {
-
-                    Console.WriteLine("Ошибка сохранения БД: " + dbEx.InnerException?.Message ?? dbEx.Message);
-                    ModelState.AddModelError("", "Ошибка сохранения книги в базу данных. Проверьте, существует ли выбранный Издатель.");
-                }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Общая ошибка сохранения: " + ex.Message);
-                    ModelState.AddModelError("", "Произошла непредвиденная ошибка при добавлении книги.");
+                    await transaction.RollbackAsync();
+                    ModelState.AddModelError("", "Ошибка при создании экземпляров: " + ex.Message);
                 }
             }
 
-            
+            // Если что-то пошло не так, заново заполняем ViewBag для формы
             ViewBag.Publishers = new SelectList(await _context.Publishers.ToListAsync(), "IdPublisher", "Name", book.PublisherId);
 
             var authorsList = await _context.Authors
@@ -165,12 +180,10 @@ namespace Library2.Controllers
                 {
                     Value = a.IdAuthor.ToString(),
                     Text = $"{a.FirstName} {a.LastName}" + (!string.IsNullOrEmpty(a.MiddleName) ? $" {a.MiddleName}" : "")
-                })
-                .ToListAsync();
+                }).ToListAsync();
             ViewBag.Authors = new MultiSelectList(authorsList, "Value", "Text", selectedAuthors);
 
-            var genresList = await _context.Genres.ToListAsync();
-            ViewBag.Genres = new MultiSelectList(genresList, "IdGenre", "Name", selectedGenres);
+            ViewBag.Genres = new MultiSelectList(await _context.Genres.ToListAsync(), "IdGenre", "Name", selectedGenres);
 
             return View(book);
         }

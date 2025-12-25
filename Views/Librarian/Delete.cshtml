@@ -1,6 +1,6 @@
 ﻿@model Library2.Models.Book
 @{
-    ViewData["Title"] = "Удалить книгу";
+    ViewData["Title"] = "Списание экземпляра";
 }
 
 <div class="container py-5">
@@ -8,61 +8,65 @@
         <div class="col-md-8 col-lg-6">
             <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
                 <div class="bg-danger text-white p-4 text-center">
-                    <i class="bi bi-exclamation-octagon display-4 mb-2"></i>
-                    <h2 class="fw-bold mb-0">Подтверждение удаления</h2>
                 </div>
 
                 <div class="card-body p-4 p-md-5">
                     <p class="text-center text-muted mb-4">
-                        Вы собираетесь удалить следующее издание. Это действие нельзя будет отменить.
+                        Вы собираетесь безвозвратно удалить данный экземпляр книги из фонда библиотеки.
                     </p>
 
-                    <div class="deletion-details-box rounded-3 p-3 mb-4">
-                        <h4 class="text-dark fw-bold mb-3 text-center">@Model.Title</h4>
+                    <div class="deletion-details-box rounded-3 p-3 mb-4 bg-light border">
+                        <h4 class="text-dark fw-bold mb-1 text-center">@Model.Title</h4>
                         <hr class="opacity-10">
 
                         <dl class="row mb-0 small">
-                            <dt class="col-sm-4 text-muted">Издательство:</dt>
-                            <dd class="col-sm-8 fw-semibold">@Model.Publisher?.Name</dd>
-
-                            <dt class="col-sm-4 text-muted">Количество:</dt>
-                            <dd class="col-sm-8 fw-semibold">@Model.Quantity шт.</dd>
-
-                            <dt class="col-sm-4 text-muted">Авторы:</dt>
-                            <dd class="col-sm-8">
-                                @foreach (var author in Model.BookAuthors)
-                                {
-                                    <span class="badge bg-light text-dark border me-1">@author.Author.FullName</span>
+                            <dt class="col-sm-5 text-muted">Текущий статус:</dt>
+                            <dd class="col-sm-7 fw-bold">
+                                @{
+                                    var statusText = Model.Status switch
+                                    {
+                                        BookStatus.Available => "В наличии",
+                                        BookStatus.Reserved => "Зарезервирована",
+                                        BookStatus.Issued => "Выдана",
+                                        _ => Model.Status.ToString()
+                                    };
                                 }
+                                <span class="text-danger">@statusText.ToUpper()</span>
                             </dd>
 
-                            <dt class="col-sm-4 text-muted">Жанры:</dt>
-                            <dd class="col-sm-8">
-                                @foreach (var genre in Model.BookGenres)
+                            <dt class="col-sm-5 text-muted">Издательство:</dt>
+                            <dd class="col-sm-7">@Model.Publisher?.Name</dd>
+
+                            <dt class="col-sm-5 text-muted">Авторы:</dt>
+                            <dd class="col-sm-7">
+                                @foreach (var author in Model.BookAuthors)
                                 {
-                                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle me-1">@genre.Genre.Name</span>
+                                    <span class="badge bg-white text-dark border me-1">@author.Author.LastName</span>
                                 }
                             </dd>
                         </dl>
                     </div>
 
+                    @if (Model.Status == BookStatus.Issued)
+                    {
+                        <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <div>
+                                <strong>Внимание!</strong> Книга числится как "Выдана". Списание выданной книги может нарушить отчетность.
+                            </div>
+                        </div>
+                    }
+
                     <form asp-action="Delete" class="d-flex gap-2">
                         <input type="hidden" asp-for="IdBook" />
                         <button type="submit" class="btn btn-danger w-100 rounded-pill py-2 fw-bold shadow-sm">
-                            <i class="bi bi-trash3 me-2"></i>Да, удалить
+                            <i class="bi bi-check-lg me-2"></i>Подтвердить списание
                         </button>
-                        <a asp-action="BookList" class="btn btn-light w-100 rounded-pill py-2 fw-bold border">
+                        <a asp-action="Index" class="btn btn-light w-100 rounded-pill py-2 fw-bold border">
                             Отмена
                         </a>
                     </form>
                 </div>
-            </div>
-
-            <div class="text-center mt-3">
-                <small class="text-muted">
-                    <i class="bi bi-info-circle me-1"></i>
-                    Если у книги есть активные выдачи, удаление может быть заблокировано системой.
-                </small>
             </div>
         </div>
     </div>

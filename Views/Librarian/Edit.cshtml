@@ -1,63 +1,94 @@
 ﻿@model Library2.Models.Book
 @{
-    ViewData["Title"] = "Редактировать книгу";
+    ViewData["Title"] = "Редактировать экземпляр";
 }
 
-<h1>Редактировать книгу</h1>
-<div class="row">
-    <div class="col-md-6">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+<div class="container py-4">
+    <div class="d-flex align-items-center mb-4">
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm me-3 rounded-pill">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h2 fw-bold mb-0">Редактирование данных</h1>
+    </div>
 
-            <input type="hidden" asp-for="IdBook" />
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card border-0 shadow-lg rounded-4">
+                <div class="card-body p-4 p-md-5">
+                    <form asp-action="Edit">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+                        <input type="hidden" asp-for="IdBook" />
 
-            <div class="form-group mb-3">
-                <label asp-for="Title" class="control-label"></label>
-                <input asp-for="Title" class="form-control" />
-                <span asp-validation-for="Title" class="text-danger"></span>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <h5 class="text-primary fw-bold mb-3"><i class="bi bi-info-circle me-2"></i>Информация об издании</h5>
+
+                                <div class="form-floating mb-3">
+                                    <input asp-for="Title" class="form-control rounded-3" placeholder="Название" />
+                                    <label asp-for="Title">Название книги</label>
+                                    <span asp-validation-for="Title" class="text-danger small"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Издательство</label>
+                                    <select asp-for="PublisherId" class="form-select rounded-3" asp-items="@ViewBag.Publishers">
+                                        <option value="">-- Выберите издательство --</option>
+                                    </select>
+                                    <span asp-validation-for="PublisherId" class="text-danger small"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label asp-for="Status" class="form-label fw-semibold text-danger">Текущий статус экземпляра</label>
+                                    <select asp-for="Status" class="form-select rounded-3 border-danger-subtle"
+                                            asp-items="Html.GetEnumSelectList<Library2.Models.BookStatus>()">
+                                    </select>
+                                    <div class="form-text small text-muted">Внимание: ручное изменение статуса может повлиять на учет выдач.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label asp-for="Annotation" class="form-label fw-semibold">Аннотация</label>
+                                    <textarea asp-for="Annotation" class="form-control rounded-3" rows="6" placeholder="Описание..."></textarea>
+                                    <span asp-validation-for="Annotation" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <h5 class="text-primary fw-bold mb-3"><i class="bi bi-tags me-2"></i>Авторы и Жанры</h5>
+
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold">Авторы</label>
+                                    <select multiple="multiple" name="selectedAuthors" id="selectedAuthors"
+                                            asp-items="@ViewBag.Authors" class="form-select shadow-sm" size="7">
+                                    </select>
+                                    <small class="text-muted"><i class="bi bi-info-circle"></i> Зажмите Ctrl для выбора нескольких</small>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold">Жанры</label>
+                                    <select multiple="multiple" name="selectedGenres" id="selectedGenres"
+                                            asp-items="@ViewBag.Genres" class="form-select shadow-sm" size="7">
+                                    </select>
+                                </div>
+
+                                <div class="alert alert-info border-0 shadow-sm rounded-3">
+                                    <small>
+                                        <i class="bi bi-lightbulb me-1"></i>
+                                        Инвентарный номер <strong>#@Model.IdBook</strong> закреплен за этой записью навсегда.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 mt-4 pt-3 border-top">
+                            <button type="submit" class="btn btn-primary px-5 rounded-pill shadow">
+                                <i class="bi bi-save me-2"></i>Сохранить изменения
+                            </button>
+                            <a asp-action="Index" class="btn btn-light px-4 rounded-pill border">Отмена</a>
+                        </div>
+                    </form>
+                </div>
             </div>
-
-            <div class="form-group mb-3">
-                <label asp-for="PublisherId" class="control-label"></label>
-                <select asp-for="PublisherId" class="form-control" asp-items="@ViewBag.Publishers">
-                    <option value="">-- Выберите издательство --</option>
-                </select>
-                <span asp-validation-for="PublisherId" class="text-danger"></span>
-            </div>
-
-            <div class="form-group mb-3">
-                <label class="control-label">Авторы (выберите одного или нескольких)</label>
-                <select multiple="multiple" name="selectedAuthors" asp-items="@ViewBag.Authors" class="form-control" size="5">
-                    <option value="">-- Выберите авторов --</option>
-                </select>
-            </div>
-
-            <div class="form-group mb-3">
-                <label asp-for="Quantity" class="control-label"></label>
-                <input asp-for="Quantity" class="form-control" />
-                <span asp-validation-for="Quantity" class="text-danger"></span>
-            </div>
-
-
-            <div class="form-group mb-3">
-                <label asp-for="Annotation" class="control-label"></label>
-                <textarea asp-for="Annotation" class="form-control" rows="5"></textarea>
-                <span asp-validation-for="Annotation" class="text-danger"></span>
-            </div>
-
-
-            <div class="form-group mb-3">
-                <label class="control-label">Жанры (выберите один или несколько)</label>
-                <select multiple="multiple" name="selectedGenres" asp-items="@ViewBag.Genres" class="form-control" size="5">
-                    <option value="">-- Выберите жанры --</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <button type="submit" class="btn btn-primary">Сохранить</button>
-                <a asp-action="Index" class="btn btn-secondary">Отмена</a>
-            </div>
-        </form>
+        </div>
     </div>
 </div>
 

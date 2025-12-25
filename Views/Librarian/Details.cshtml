@@ -1,6 +1,6 @@
 ﻿@model Library2.Models.Book
 @{
-    ViewData["Title"] = "Детали книги";
+    ViewData["Title"] = "Детали экземпляра";
 }
 
 <div class="container py-4">
@@ -8,7 +8,7 @@
         <a asp-action="Index" class="btn btn-outline-secondary btn-sm me-3 rounded-pill">
             <i class="bi bi-arrow-left"></i>
         </a>
-        <h1 class="h2 fw-bold mb-0">Карточка книги</h1>
+        <h1 class="h2 fw-bold mb-0">Карточка экземпляра</h1>
     </div>
 
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
@@ -19,26 +19,47 @@
                         <i class="bi bi-book-half display-1 text-primary"></i>
                     </div>
                     <h3 class="fw-bold">@Model.Title</h3>
-                    <p class="text-muted small">ID: @Model.IdBook</p>
+                    <p class="text-muted small">Инвентарный №: @Model.IdBook</p>
                 </div>
 
                 <div class="stats-box rounded-3 p-3 bg-white border shadow-sm">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Всего:</span>
-                        <span class="fw-bold text-dark">@Model.Quantity шт.</span>
+                    <div class="mb-3 text-center">
+                        <h6 class="text-muted small text-uppercase fw-bold">Текущее состояние</h6>
+                        @{
+                            var statusClass = Model.Status switch
+                            {
+                                BookStatus.Available => "success",
+                                BookStatus.Reserved => "warning",
+                                BookStatus.Issued => "danger",
+                                _ => "secondary"
+                            };
+                            var statusText = Model.Status switch
+                            {
+                                BookStatus.Available => "В наличии",
+                                BookStatus.Reserved => "Зарезервирована",
+                                BookStatus.Issued => "На руках у читателя",
+                                _ => Model.Status.ToString()
+                            };
+                        }
+                        <span class="badge bg-@statusClass fs-6 px-3 py-2 rounded-pill shadow-sm">
+                            @statusText.ToUpper()
+                        </span>
                     </div>
-                    <div class="d-flex justify-content-between">
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between mb-2 small">
                         <span class="text-muted">Издатель:</span>
-                        <span class="fw-bold text-primary">@Model.Publisher?.Name</span>
+                        <span class="fw-bold text-dark text-end">@Model.Publisher?.Name</span>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-8 p-4 p-md-5">
+            <div class="col-md-8 p-4 p-md-5 bg-white">
                 <div class="mb-4">
-                    <h5 class="fw-bold text-secondary border-bottom pb-2">Аннотация</h5>
+                    <h5 class="fw-bold text-secondary border-bottom pb-2"><i class="bi bi-card-text me-2"></i>Аннотация</h5>
                     <p class="text-dark lh-base mt-3" style="text-align: justify;">
-                        @(string.IsNullOrEmpty(Model.Annotation) ? "Описание отсутствует." : Model.Annotation)
+                        @(string.IsNullOrEmpty(Model.Annotation) ? "Описание для данного издания отсутствует." : Model.Annotation)
                     </p>
                 </div>
 
@@ -50,14 +71,14 @@
                             {
                                 @foreach (var ba in Model.BookAuthors)
                                 {
-                                    <span class="badge badge-author-detail">
+                                    <span class="badge border text-dark bg-light px-3 py-2">
                                         <i class="bi bi-person me-1"></i>@ba.Author.LastName @ba.Author.FirstName
                                     </span>
                                 }
                             }
                             else
                             {
-                                <span class="text-muted">Не указаны</span>
+                                <span class="text-muted italic small">Авторы не указаны</span>
                             }
                         </div>
                     </div>
@@ -69,23 +90,38 @@
                             {
                                 @foreach (var bg in Model.BookGenres)
                                 {
-                                    <span class="badge badge-genre-detail">@bg.Genre.Name</span>
+                                    <span class="badge bg-info-subtle text-info border border-info-subtle px-3 py-2">@bg.Genre.Name</span>
                                 }
                             }
                             else
                             {
-                                <span class="text-muted">Не указаны</span>
+                                <span class="text-muted italic small">Жанры не указаны</span>
                             }
                         </div>
                     </div>
                 </div>
+
+                @if (Model.BookLoans?.Any() == true)
+                {
+                    <div class="mt-4">
+                        <h6 class="fw-bold text-muted text-uppercase small mb-3">Последняя активность</h6>
+                        <div class="alert alert-light border small">
+                            @{
+                                var lastLoan = Model.BookLoans.OrderByDescending(l => l.LoanDate).First();
+                            }
+                            <i class="bi bi-clock-history me-2"></i>
+                            Последняя операция: <strong>@(lastLoan.ReturnDate == null ? "Выдана" : "Возвращена")</strong>
+                            (@lastLoan.LoanDate.ToShortDateString())
+                        </div>
+                    </div>
+                }
 
                 <div class="d-flex gap-2 mt-4 pt-4 border-top">
                     <a asp-action="Edit" asp-route-id="@Model.IdBook" class="btn btn-primary px-4 rounded-pill">
                         <i class="bi bi-pencil-square me-2"></i>Редактировать
                     </a>
                     <a asp-action="Delete" asp-route-id="@Model.IdBook" class="btn btn-outline-danger px-4 rounded-pill">
-                        <i class="bi bi-trash me-2"></i>Удалить книгу
+                        <i class="bi bi-trash me-2"></i>Списать экземпляр
                     </a>
                 </div>
             </div>

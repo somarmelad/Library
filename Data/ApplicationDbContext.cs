@@ -56,6 +56,12 @@ namespace Library2.Data
                 .HasOne(b => b.Publisher)
                 .WithMany(p => p.Books)
                 .HasForeignKey(b => b.PublisherId);
+
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Book>()
+                .Property(e => e.Status)
+                .HasConversion<string>();
         }
     }
 }

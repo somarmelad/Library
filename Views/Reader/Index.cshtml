@@ -8,7 +8,6 @@
     <h1>Каталог Книг</h1>
 </div>
 
-@* Блок вывода уведомлений (успех или ошибка) *@
 @if (TempData["Success"] != null)
 {
     <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -24,7 +23,6 @@
     </div>
 }
 
-@* Форма поиска *@
 <form asp-controller="Reader" asp-action="Index" method="get" class="mb-4">
     <div class="input-group">
         <input type="text"
@@ -68,40 +66,49 @@
 
                         <div class="mt-auto pt-2 border-top">
                             <p class="card-text mb-1">
-                                <span class="fw-bold">В наличии:</span>
+                                @* ИСПРАВЛЕННАЯ ЛОГИКА СТАТУСА *@
                                 @{
-                                    var resDict = ViewBag.ActiveReservations as Dictionary<int, int> ?? new Dictionary<int, int>();
+                                    // Проверяем, забронирована ли эта КОНКРЕТНАЯ книга текущим пользователем
                                     var myReservedIds = ViewBag.MyReservedIds as List<int> ?? new List<int>();
-
-                                    int loanedCount = item.BookLoans?.Count(bl => bl.ReturnDate == null) ?? 0;
-
-                                    int reservedCount = resDict.ContainsKey(item.IdBook) ? resDict[item.IdBook] : 0;
-
-                                    int availableCount = item.Quantity - loanedCount - reservedCount;
-
                                     bool isAlreadyReservedByMe = myReservedIds.Contains(item.IdBook);
+
+                                    // Книга доступна, если её статус Available
+                                    bool isAvailable = item.Status == BookStatus.Available;
                                 }
-                                <span class="@(availableCount > 0 ? "text-success" : "text-danger")">
-                                    @availableCount из @item.Quantity
-                                </span>
+
+                                <span class="fw-bold">Статус:</span>
+                                @if (isAvailable)
+                                {
+                                    <span class="text-success">Свободна</span>
+                                }
+                                else if (isAlreadyReservedByMe)
+                                {
+                                    <span class="text-info">Забронирована вами</span>
+                                }
+                                else
+                                {
+                                    <span class="text-danger">Занята</span>
+                                }
+                                <br />
+                                <small class="text-muted">Инв. №@item.IdBook</small>
                             </p>
 
-                            <form asp-controller="Reader" asp-action="Reserve" method="post">
+                            <form asp-controller="Reservations" asp-action="Reserve" method="post">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="BookId" value="@item.IdBook" />
 
                                 @if (isAlreadyReservedByMe)
                                 {
-                                    <button type="button" class="btn btn-sm btn-success w-100" disabled title="Вы уже забронировали эту книгу">
-                                        <i class="bi bi-check-circle"></i> Забронировано вами
+                                    <button type="button" class="btn btn-sm btn-success w-100" disabled>
+                                        <i class="bi bi-check-circle"></i> Ожидает получения
                                     </button>
                                 }
                                 else
                                 {
                                     <button type="submit"
                                             class="btn btn-sm btn-primary w-100"
-                                            @(availableCount <= 0 ? "disabled" : "")>
-                                        @(availableCount <= 0 ? "Нет в наличии" : "Забронировать")
+                                            @(isAvailable ? "" : "disabled")>
+                                        @(isAvailable ? "Забронировать" : "Недоступна")
                                     </button>
                                 }
                             </form>

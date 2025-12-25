@@ -20,7 +20,6 @@ namespace Library2.Controllers
         }
 
         // GET: /Home/Index
-        // Выполняет маршрутизацию в зависимости от роли пользователя
         public IActionResult Index()
         {
             if (!User.Identity.IsAuthenticated)

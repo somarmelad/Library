@@ -7,15 +7,15 @@
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="fw-bold text-dark"><i class="bi bi-journal-bookmark-fill text-primary me-2"></i>Каталог Книг</h1>
-            <p class="text-muted">Управление книжным фондом и инвентаризация</p>
+            <h1 class="fw-bold text-dark"><i class="bi bi-journal-bookmark-fill text-primary me-2"></i>Инвентарный список</h1>
+            <p class="text-muted">Учет каждого экземпляра книги и его текущего состояния</p>
         </div>
         <div class="btn-group">
             <a asp-action="Index" asp-controller="Librarian" class="btn btn-outline-secondary">
                 <i class="bi bi-house-door"></i> В панель
             </a>
             <a asp-action="Create" class="btn btn-primary shadow-sm">
-                <i class="bi bi-plus-lg"></i> Добавить книгу
+                <i class="bi bi-plus-lg"></i> Добавить экземпляры
             </a>
         </div>
     </div>
@@ -26,24 +26,38 @@
                 <table class="table table-hover align-middle mb-0 custom-admin-table">
                     <thead>
                         <tr>
-                            <th class="ps-4">Название</th>
+                            <th class="ps-4">ID / Название</th>
                             <th>Авторы</th>
-                            <th>Жанры</th>
                             <th>Издательство</th>
-                            <th class="text-center">Наличие (Занято/Всего)</th>
+                            <th class="text-center">Текущий статус</th>
                             <th class="text-end pe-4">Действия</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var item in Model)
                         {
-                            var activeLoansCount = item.BookLoans?.Count(bl => bl.ReturnDate == null) ?? 0;
-                            var availableCount = item.Quantity - activeLoansCount;
-                            var statusColor = availableCount > 0 ? "success" : "danger";
+                            // Логика определения цвета для статуса
+                            string statusClass = item.Status switch
+                            {
+                                BookStatus.Available => "success",
+                                BookStatus.Reserved => "warning",
+                                BookStatus.Issued => "danger",
+                                _ => "secondary"
+                            };
+
+                            // Текстовое описание статуса (можно использовать Display attribute или просто текст)
+                            string statusText = item.Status switch
+                            {
+                                BookStatus.Available => "В наличии",
+                                BookStatus.Reserved => "Зарезервирована",
+                                BookStatus.Issued => "Выдана",
+                                _ => item.Status.ToString()
+                            };
 
                             <tr>
                                 <td class="ps-4">
-                                    <span class="fw-bold d-block">@item.Title</span>
+                                    <small class="text-muted d-block">Инв. №@item.IdBook</small>
+                                    <span class="fw-bold">@item.Title</span>
                                 </td>
                                 <td>
                                     @foreach (var author in item.BookAuthors)
@@ -51,31 +65,21 @@
                                         <span class="badge badge-author">@author.Author.LastName</span>
                                     }
                                 </td>
-                                <td>
-                                    @foreach (var genre in item.BookGenres)
-                                    {
-                                        <span class="badge badge-genre">@genre.Genre.Name</span>
-                                    }
-                                </td>
                                 <td>@item.Publisher?.Name</td>
                                 <td class="text-center">
-                                    <div class="inventory-status bg-@statusColor-light text-@statusColor">
-                                        <strong>@activeLoansCount</strong> / @item.Quantity
-                                    </div>
-                                    @if (availableCount <= 0)
-                                    {
-                                        <span class="badge rounded-pill bg-danger mt-1" style="font-size: 0.65rem;">НЕТ НА СКЛАДЕ</span>
-                                    }
+                                    <span class="badge rounded-pill bg-@statusClass" style="padding: 0.5em 1em; font-size: 0.85rem;">
+                                        @statusText.ToUpper()
+                                    </span>
                                 </td>
                                 <td class="text-end pe-4">
                                     <div class="btn-group btn-group-sm">
                                         <a asp-action="Details" asp-route-id="@item.IdBook" class="btn btn-light" title="Подробности">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        <a asp-action="Edit" asp-route-id="@item.IdBook" class="btn btn-light text-warning" title="Редактировать">
+                                        <a asp-action="Edit" asp-route-id="@item.IdBook" class="btn btn-light text-warning" title="Редактировать статус">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <a asp-action="Delete" asp-route-id="@item.IdBook" class="btn btn-light text-danger" title="Удалить">
+                                        <a asp-action="Delete" asp-route-id="@item.IdBook" class="btn btn-light text-danger" title="Списать экземпляр">
                                             <i class="bi bi-trash"></i>
                                         </a>
                                     </div>
