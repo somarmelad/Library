@@ -20,7 +20,6 @@ namespace Library2.Models
         [StringLength(45)]
         public string? MiddleName { get; set; }
 
-        // Computed property для отображения
         public string FullName => $"{FirstName} {LastName}" + (string.IsNullOrEmpty(MiddleName) ? "" : $" {MiddleName}");
 
         // Навигационные свойства for many-to-many

@@ -3,312 +3,92 @@
     ViewData["Title"] = "Добавить книгу";
 }
 
-<h1>Добавить книгу</h1>
-
-<div class="row">
-    <div class="col-md-6">
-        <form asp-action="Create">
-
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-            <hr />
-
-            <div class="form-group mb-3">
-                <label asp-for="Title" class="control-label"></label>
-                <input asp-for="Title" class="form-control" />
-                <span asp-validation-for="Title" class="text-danger"></span>
-            </div>
-
-            <div class="form-group mb-3 d-flex align-items-end">
-                <div class="flex-grow-1 me-2">
-                    <label asp-for="PublisherId" class="control-label"></label>
-                    <select asp-for="PublisherId" class="form-control" asp-items="@ViewBag.Publishers"></select>
-                    <span asp-validation-for="PublisherId" class="text-danger"></span>
-                </div>
-                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createPublisherModal" style="height: 38px;">+</button>
-            </div>
-
-
-            <div class="form-group mb-3">
-                <label asp-for="Quantity" class="control-label"></label>
-                <input asp-for="Quantity" class="form-control" />
-                <span asp-validation-for="Quantity" class="text-danger"></span>
-            </div>
-
-
-            <div class="form-group mb-3">
-                <label asp-for="Annotation" class="control-label"></label>
-                <textarea asp-for="Annotation" class="form-control" rows="5"></textarea>
-                <span asp-validation-for="Annotation" class="text-danger"></span>
-            </div>
-
-
-            <div class="form-group mb-3 d-flex align-items-end">
-                <div class="flex-grow-1 me-2">
-                    <label class="control-label">Авторы</label>
-                    <select multiple="multiple" name="selectedAuthors" id="selectedAuthors" asp-items="@ViewBag.Authors" class="form-control" size="5"></select>
-                </div>
-                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createAuthorModal" style="height: 38px;">+</button>
-            </div>
-
-            <div class="form-group mb-3 d-flex align-items-end">
-                <div class="flex-grow-1 me-2">
-                    <label class="control-label">Жанры</label>
-                    <select multiple="multiple" name="selectedGenres" id="selectedGenres" asp-items="@ViewBag.Genres" class="form-control" size="5"></select>
-                </div>
-                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createGenreModal" style="height: 38px;">+</button>
-            </div>
-
-            <hr />
-
-            <div class="form-group">
-                <button type="submit" class="btn btn-primary">Добавить</button>
-                <a asp-action="Index" class="btn btn-secondary">Отмена</a>
-            </div>
-        </form>
+<div class="container py-4">
+    <div class="d-flex align-items-center mb-4">
+        <a asp-action="BookList" class="btn btn-outline-secondary btn-sm me-3 rounded-pill">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h2 fw-bold mb-0">Новое издание в каталог</h1>
     </div>
-</div>
 
-@* Модальные окна и скрипты остаются без изменений... *@
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card border-0 shadow-lg rounded-4">
+                <div class="card-body p-4 p-md-5">
+                    <form asp-action="Create">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
 
-@* Модальное окно для создания Издателя *@
-<div class="modal fade" id="createPublisherModal" tabindex="-1" aria-labelledby="createPublisherModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="createPublisherModalLabel">Добавить новое издательство</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label for="publisherNameInput" class="form-label">Название издательства</label>
-                    <input type="text" class="form-control" id="publisherNameInput">
-                    <div class="text-danger mt-2" id="publisherError"></div>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <h5 class="text-primary fw-bold mb-3"><i class="bi bi-info-circle me-2"></i>Общая информация</h5>
+
+                                <div class="form-floating mb-3">
+                                    <input asp-for="Title" class="form-control rounded-3" placeholder="Название книги" />
+                                    <label asp-for="Title">Название книги</label>
+                                    <span asp-validation-for="Title" class="text-danger small"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Издательство</label>
+                                    <div class="input-group">
+                                        <select asp-for="PublisherId" class="form-select rounded-start-3" asp-items="@ViewBag.Publishers">
+                                            <option value="">-- Выберите издательство --</option>
+                                        </select>
+                                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createPublisherModal">
+                                            <i class="bi bi-plus-lg"></i>
+                                        </button>
+                                    </div>
+                                    <span asp-validation-for="PublisherId" class="text-danger small"></span>
+                                </div>
+
+                                <div class="form-floating mb-3">
+                                    <input asp-for="Quantity" type="number" class="form-control rounded-3" placeholder="Кол-во" />
+                                    <label asp-for="Quantity">Количество экземпляров</label>
+                                    <span asp-validation-for="Quantity" class="text-danger small"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label asp-for="Annotation" class="form-label fw-semibold">Аннотация</label>
+                                    <textarea asp-for="Annotation" class="form-control rounded-3" rows="6" placeholder="Краткое содержание..."></textarea>
+                                    <span asp-validation-for="Annotation" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <h5 class="text-primary fw-bold mb-3"><i class="bi bi-tags me-2"></i>Авторы и Жанры</h5>
+
+                                <div class="mb-4">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label class="form-label fw-semibold mb-0">Выберите авторов</label>
+                                        <button type="button" class="btn btn-link btn-sm text-decoration-none" data-bs-toggle="modal" data-bs-target="#createAuthorModal">
+                                            <i class="bi bi-person-plus"></i> Новый автор
+                                        </button>
+                                    </div>
+                                    <select multiple="multiple" name="selectedAuthors" id="selectedAuthors" asp-items="@ViewBag.Authors" class="form-select multi-select-box shadow-sm" size="7"></select>
+                                    <small class="text-muted"><i class="bi bi-info-circle"></i> Зажмите Ctrl, чтобы выбрать нескольких</small>
+                                </div>
+
+                                <div class="mb-4">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label class="form-label fw-semibold mb-0">Выберите жанры</label>
+                                        <button type="button" class="btn btn-link btn-sm text-decoration-none" data-bs-toggle="modal" data-bs-target="#createGenreModal">
+                                            <i class="bi bi-plus-circle"></i> Новый жанр
+                                        </button>
+                                    </div>
+                                    <select multiple="multiple" name="selectedGenres" id="selectedGenres" asp-items="@ViewBag.Genres" class="form-select multi-select-box shadow-sm" size="7"></select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 mt-4 pt-3 border-top">
+                            <button type="submit" class="btn btn-primary px-5 rounded-pill shadow">
+                                <i class="bi bi-check-lg me-2"></i>Сохранить книгу
+                            </button>
+                            <a asp-action="BookList" class="btn btn-light px-4 rounded-pill">Отмена</a>
+                        </div>
+                    </form>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" id="savePublisherBtn">Сохранить</button>
             </div>
         </div>
     </div>
 </div>
-
-@* Модальное окно для создания Автора *@
-<div class="modal fade" id="createAuthorModal" tabindex="-1" aria-labelledby="createAuthorModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="createAuthorModalLabel">Добавить нового автора</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label for="authorLastNameInput" class="form-label">Фамилия (Обязательно)</label>
-                    <input type="text" class="form-control" id="authorLastNameInput">
-                </div>
-                <div class="mb-3">
-                    <label for="authorFirstNameInput" class="form-label">Имя (Обязательно)</label>
-                    <input type="text" class="form-control" id="authorFirstNameInput">
-                </div>
-                <div class="mb-3">
-                    <label for="authorMiddleNameInput" class="form-label">Отчество (Необязательно)</label>
-                    <input type="text" class="form-control" id="authorMiddleNameInput">
-                </div>
-                <div class="text-danger mt-2" id="authorError"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" id="saveAuthorBtn">Сохранить</button>
-            </div>
-        </div>
-    </div>
-</div>
-@* Модальное окно для создания Жанра *@
-<div class="modal fade" id="createGenreModal" tabindex="-1" aria-labelledby="createGenreModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="createGenreModalLabel">Добавить новый жанр</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label for="genreNameInput" class="form-label">Название жанра</label>
-                    <input type="text" class="form-control" id="genreNameInput">
-                    <div class="text-danger mt-2" id="genreError"></div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" id="saveGenreBtn">Сохранить</button>
-            </div>
-        </div>
-    </div>
-</div>
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-    <script>
-        $(document).ready(function () {
-            // Убедитесь, что все SELECT-теги имеют ID:
-            // Издатель: #PublisherId
-            // Авторы: #selectedAuthors
-            // Жанры: #selectedGenres
-
-            var token = $('input[name="__RequestVerificationToken"]').val();
-
-            // =======================================================
-            // 1. ЛОГИКА ДЛЯ ИЗДАТЕЛЬСТВА (PUBLISHER)
-            // =======================================================
-            $("#savePublisherBtn").click(function () {
-                var name = $("#publisherNameInput").val();
-                $("#publisherError").text("");
-
-                if (name.trim() === "") {
-                    $("#publisherError").text("Пожалуйста, введите название.");
-                    return;
-                }
-
-                $.ajax({
-                    url: '@Url.Action("CreatePublisherAjax", "Books")',
-                    type: "POST",
-                    data: {
-                        name: name,
-                        __RequestVerificationToken: token
-                    },
-                    success: function (response) {
-                        if (response.success) {
-                            // Создаем опцию и сразу ее выбираем
-                            var newOption = new Option(response.name, response.id, true, true);
-                            $("#PublisherId").append(newOption).trigger('change');
-
-                            // Закрываем модальное окно и очищаем
-                            bootstrap.Modal.getInstance(document.getElementById('createPublisherModal')).hide();
-                            $("#publisherNameInput").val('');
-                        } else {
-                            $("#publisherError").text(response.message);
-                        }
-                    },
-                    error: function (xhr, status, error) {
-                        $("#publisherError").text("Произошла ошибка сети/сервера: " + error);
-                    }
-                });
-            });
-
-
-            // =======================================================
-            // 2. ЛОГИКА ДЛЯ АВТОРОВ (AUTHOR)
-            // =======================================================
-            $("#saveAuthorBtn").click(function () {
-                var firstName = $("#authorFirstNameInput").val();
-                var lastName = $("#authorLastNameInput").val();
-                var middleName = $("#authorMiddleNameInput").val();
-
-                $("#authorError").text("");
-
-                if (firstName.trim() === "" || lastName.trim() === "") {
-                    $("#authorError").text("Имя и фамилия обязательны.");
-                    return;
-                }
-
-                $.ajax({
-                    url: '@Url.Action("CreateAuthorAjax", "Books")',
-                    type: "POST",
-                    data: {
-                        firstName: firstName,
-                        lastName: lastName,
-                        middleName: middleName,
-                        __RequestVerificationToken: token
-                    },
-                    success: function (response) {
-                        if (response.success) {
-                            var $select = $('#selectedAuthors');
-                            var newIdString = response.id.toString();
-
-                            // 1. Получаем текущие выбранные значения
-                            var currentSelected = $select.val() || [];
-
-                            // 2. Создаем и добавляем новую опцию в SELECT
-                            $select.append($('<option>', {
-                                value: newIdString,
-                                text: response.fullName
-                            }));
-
-                            // 3. Добавляем новый ID к массиву выбранных
-                            currentSelected.push(newIdString);
-
-                            // 4. Явно устанавливаем новое состояние выбора, чтобы обновить Multi-Select
-                            $select.val(currentSelected).trigger('change');
-
-                            // Закрываем модальное окно и очищаем
-                            bootstrap.Modal.getInstance(document.getElementById('createAuthorModal')).hide();
-                            $("#authorFirstNameInput").val('');
-                            $("#authorLastNameInput").val('');
-                            $("#authorMiddleNameInput").val('');
-                        } else {
-                            $("#authorError").text(response.message);
-                        }
-                    },
-                    error: function (xhr, status, error) {
-                        $("#authorError").text("Произошла ошибка сети/сервера: " + error);
-                    }
-                });
-            });
-
-
-            // =======================================================
-            // 3. ЛОГИКА ДЛЯ ЖАНРОВ (GENRE)
-            // =======================================================
-            $("#saveGenreBtn").click(function () {
-                var name = $("#genreNameInput").val();
-                $("#genreError").text("");
-
-                if (name.trim() === "") {
-                    $("#genreError").text("Пожалуйста, введите название жанра.");
-                    return;
-                }
-
-                $.ajax({
-                    url: '@Url.Action("CreateGenreAjax", "Books")',
-                    type: "POST",
-                    data: {
-                        name: name,
-                        __RequestVerificationToken: token
-                    },
-                    success: function (response) {
-                        if (response.success) {
-                            var $select = $('#selectedGenres');
-                            var newIdString = response.id.toString();
-
-                            // 1. Получаем текущие выбранные значения
-                            var currentSelected = $select.val() || [];
-
-                            // 2. Создаем и добавляем новую опцию в SELECT
-                            $select.append($('<option>', {
-                                value: newIdString,
-                                text: response.name
-                            }));
-
-                            // 3. Добавляем новый ID к массиву выбранных
-                            currentSelected.push(newIdString);
-
-                            // 4. Явно устанавливаем новое состояние выбора
-                            $select.val(currentSelected).trigger('change');
-
-                            // Закрываем модальное окно и очищаем
-                            bootstrap.Modal.getInstance(document.getElementById('createGenreModal')).hide();
-                            $("#genreNameInput").val('');
-                        } else {
-                            $("#genreError").text(response.message);
-                        }
-                    },
-                    error: function (xhr, status, error) {
-                        $("#genreError").text("Произошла ошибка сети/сервера: " + error);
-                    }
-                });
-            });
-        });
-    </script>
-}

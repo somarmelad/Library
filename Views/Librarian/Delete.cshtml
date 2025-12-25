@@ -3,44 +3,67 @@
     ViewData["Title"] = "Удалить книгу";
 }
 
-<h1>Удалить</h1>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="bg-danger text-white p-4 text-center">
+                    <i class="bi bi-exclamation-octagon display-4 mb-2"></i>
+                    <h2 class="fw-bold mb-0">Подтверждение удаления</h2>
+                </div>
 
-<h3>Вы уверены, что хотите удалить эту книгу?</h3>
+                <div class="card-body p-4 p-md-5">
+                    <p class="text-center text-muted mb-4">
+                        Вы собираетесь удалить следующее издание. Это действие нельзя будет отменить.
+                    </p>
 
-<div>
-    <h4>@Model.Title</h4>
-    <hr />
-    <dl class="row">
+                    <div class="deletion-details-box rounded-3 p-3 mb-4">
+                        <h4 class="text-dark fw-bold mb-3 text-center">@Model.Title</h4>
+                        <hr class="opacity-10">
 
-        <dt class="col-sm-3">Название</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.Title)</dd>
+                        <dl class="row mb-0 small">
+                            <dt class="col-sm-4 text-muted">Издательство:</dt>
+                            <dd class="col-sm-8 fw-semibold">@Model.Publisher?.Name</dd>
 
-        <dt class="col-sm-3">Издательство</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.Publisher.Name)</dd>
+                            <dt class="col-sm-4 text-muted">Количество:</dt>
+                            <dd class="col-sm-8 fw-semibold">@Model.Quantity шт.</dd>
 
-        <dt class="col-sm-3">Количество</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.Quantity)</dd>
+                            <dt class="col-sm-4 text-muted">Авторы:</dt>
+                            <dd class="col-sm-8">
+                                @foreach (var author in Model.BookAuthors)
+                                {
+                                    <span class="badge bg-light text-dark border me-1">@author.Author.FullName</span>
+                                }
+                            </dd>
 
-        <dt class="col-sm-3">Авторы</dt>
-        <dd class="col-sm-9">
-            @{
-                var authors = Model.BookAuthors.Select(ba => ba.Author.FullName);
-            }
-            @string.Join(", ", authors)
-        </dd>
+                            <dt class="col-sm-4 text-muted">Жанры:</dt>
+                            <dd class="col-sm-8">
+                                @foreach (var genre in Model.BookGenres)
+                                {
+                                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle me-1">@genre.Genre.Name</span>
+                                }
+                            </dd>
+                        </dl>
+                    </div>
 
-        <dt class="col-sm-3">Жанры</dt>
-        <dd class="col-sm-9">
-            @{
-                var genres = Model.BookGenres.Select(bg => bg.Genre.Name);
-            }
-            @string.Join(", ", genres)
-        </dd>
-    </dl>
+                    <form asp-action="Delete" class="d-flex gap-2">
+                        <input type="hidden" asp-for="IdBook" />
+                        <button type="submit" class="btn btn-danger w-100 rounded-pill py-2 fw-bold shadow-sm">
+                            <i class="bi bi-trash3 me-2"></i>Да, удалить
+                        </button>
+                        <a asp-action="BookList" class="btn btn-light w-100 rounded-pill py-2 fw-bold border">
+                            Отмена
+                        </a>
+                    </form>
+                </div>
+            </div>
 
-    <form asp-action="Delete">
-        <input type="hidden" asp-for="IdBook" />
-        <button type="submit" class="btn btn-danger">Удалить</button>
-        <a asp-action="Index" class="btn btn-secondary">Отмена</a>
-    </form>
+            <div class="text-center mt-3">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Если у книги есть активные выдачи, удаление может быть заблокировано системой.
+                </small>
+            </div>
+        </div>
+    </div>
 </div>

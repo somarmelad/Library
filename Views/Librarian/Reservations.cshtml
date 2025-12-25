@@ -4,55 +4,92 @@
     ViewData["Title"] = "Управление бронированиями";
 }
 
-<h1>Бронирования книг</h1>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold"><i class="bi bi-calendar-check text-primary me-2"></i>Бронирования книг</h2>
+            <p class="text-muted mb-0">Управление заявками на получение литературы</p>
+        </div>
+        <a asp-action="Index" asp-controller="Librarian" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> На панель управления
+        </a>
+    </div>
 
-<table class="table table-hover mt-4">
-    <thead class="table-dark">
-        <tr>
-            <th>Книга</th>
-            <th>Читатель</th>
-            <th>Дата брони</th>
-            <th>Истекает</th>
-            <th>Статус</th>
-            <th>Действия</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>@item.Book.Title</td>
-                <td>@item.Reader.LastName @item.Reader.FirstName</td>
-
-                @* Безопасный вывод даты бронирования *@
-                <td>@item.ReservationDate.ToShortDateString()</td>
-
-                @* Безопасный вывод даты истечения (так как она nullable) *@
-                <td>@(item.ExpirationDate.HasValue? item.ExpirationDate.Value.ToShortDateString() : "—")</td>
-
-                <td>
-                    <span class="badge @(item.Status == "Pending" ? "bg-warning text-dark" : "bg-success")">
-                        @item.Status
-                    </span>
-                </td>
-                <td>
-                    @if (item.Status == "Pending")
-                    {
-                        <form asp-action="ConfirmReservation" asp-route-id="@item.IdReservation" method="post" style="display:inline;">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-sm btn-primary">Подтвердить</button>
-                        </form>
-                    }
-                    else if (item.Status == "Ready")
-                    {
-                        <form asp-action="IssueReservation" asp-route-id="@item.IdReservation" method="post" style="display:inline;">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-sm btn-success">Выдать книгу</button>
-                        </form>
-                    }
-                </td>
-            </tr>
-        
-        }
-    </tbody>
-</table>
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="reservationsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Книга</th>
+                            <th>Читатель</th>
+                            <th>Дата брони</th>
+                            <th>Истекает</th>
+                            <th>Статус</th>
+                            <th class="text-end pe-4">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="fw-bold text-dark">@item.Book.Title</div>
+                                    <small class="text-muted">ID книги: @item.Book.IdBook</small>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-sm me-2">@item.Reader.LastName[0]@item.Reader.FirstName[0]</div>
+                                        <div>@item.Reader.LastName @item.Reader.FirstName</div>
+                                    </div>
+                                </td>
+                                <td>@item.ReservationDate.ToString("dd.MM.yyyy")</td>
+                                <td>
+                                    @if (item.ExpirationDate.HasValue)
+                                    {
+                                        <span class="@(item.ExpirationDate < DateTime.Now ? "text-danger fw-bold" : "")">
+                                            @item.ExpirationDate.Value.ToString("dd.MM.yyyy")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @{
+                                        var badgeClass = item.Status == "Pending" ? "status-pending" :
+                                        item.Status == "Ready" ? "status-ready" : "status-default";
+                                    }
+                                    <span class="badge-pill @badgeClass">
+                                        <i class="bi bi-dot"></i> @item.Status
+                                    </span>
+                                </td>
+                                <td class="text-end pe-4">
+                                    @if (item.Status == "Pending")
+                                    {
+                                        <form asp-action="ConfirmReservation" asp-route-id="@item.IdReservation" method="post" style="display:inline;">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-confirm btn-sm">
+                                                <i class="bi bi-check2"></i> Подтвердить
+                                            </button>
+                                        </form>
+                                    }
+                                    else if (item.Status == "Ready")
+                                    {
+                                        <form asp-action="IssueReservation" asp-route-id="@item.IdReservation" method="post" style="display:inline;">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-issue btn-sm">
+                                                <i class="bi bi-hand-index-thumb"></i> Выдать
+                                            </button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

@@ -13,22 +13,22 @@
             <input type="hidden" asp-for="IdBookLoan" />
 
             <div class="form-group mb-3">
-                <label asp-for="BookId" class="control-label"></label>
+                <label asp-for="BookId" class="control-label"> Книга</label>
                 <select asp-for="BookId" class="form-control" asp-items="@ViewBag.Books"></select>
                 <span asp-validation-for="Book" class="text-danger"></span>
             </div>
             <div class="form-group mb-3">
-                <label asp-for="ReaderId" class="control-label"></label>
+                <label asp-for="ReaderId" class="control-label">Читатель</label>
                 <select asp-for="ReaderId" class="form-control" asp-items="@ViewBag.Readers"></select>
                 <span asp-validation-for="Reader" class="text-danger"></span>
             </div>
             <div class="form-group mb-3">
-                <label asp-for="EmployeeId" class="control-label"></label>
+                <label asp-for="EmployeeId" class="control-label">Библиотекарь</label>
                 <select asp-for="EmployeeId" class="form-control" asp-items="@ViewBag.Employees"></select>
                 <span asp-validation-for="EmployeeId" class="text-danger"></span>
             </div>
             <div class="form-group mb-3">
-                <label asp-for="LoanDate" class="control-label"></label>
+                <label asp-for="LoanDate" class="control-label">Дата выдачи</label>
                 <input asp-for="LoanDate" class="form-control" type="date" />
                 <span asp-validation-for="LoanDate" class="text-danger"></span>
             </div>

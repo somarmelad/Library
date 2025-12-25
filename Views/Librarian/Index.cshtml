@@ -3,78 +3,94 @@
 }
 
 <div class="container mt-5">
-    <h1 class="mb-4">Панель управления Библиотекаря</h1>
-
-    <hr />
-
-    <div class="row">
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-sm h-100 border-primary">
-                <div class="card-body">
-                    <h5 class="card-title text-primary">Управление Книгами</h5>
-                    <p class="card-text">Просмотр каталога, добавление, редактирование и удаление книг, а также управление авторами, жанрами и издателями.</p>
-                    <a asp-controller="Librarian" asp-action="BookList" class="btn btn-primary mt-3">
-                        Перейти к Книгам
-                    </a>
-                </div>
-            </div>
+    <div class="d-flex align-items-center mb-4">
+        <div class="bg-primary text-white p-3 rounded-3 me-3">
+            <i class="bi bi-speedometer2 h2 mb-0"></i>
         </div>
+        <h1 class="fw-bold mb-0">Панель управления</h1>
+    </div>
 
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-sm h-100 border-success">
-                <div class="card-body">
-                    <h5 class="card-title text-success">Управление Читателями</h5>
-                    <p class="card-text">Просмотр списка всех зарегистрированных читателей. Добавление, редактирование, удаление и просмотр их истории.</p>
-                    <a asp-controller="Readers" asp-action="Index" class="btn btn-success mt-3">
-                        Перейти к Читателям
-                    </a>
-                </div>
-            </div>
-        </div>
+    <div class="row g-4">
 
-        <div class="col-md-3 mb-4">
-            <div class="card shadow-sm h-100 border-info">
-                <div class="card-body">
-                    <h5 class="card-title text-info">Бронирования</h5>
-                    <p class="card-text small">Заявки от читателей, подготовка книг к выдаче.</p>
-                    <a asp-controller="Librarian" asp-action="Reservations" class="btn btn-info text-white mt-3 w-100">
-                        Смотреть брони
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-sm h-100 border-warning">
-                <div class="card-body">
-                    <h5 class="card-title text-warning">Выдача / Возврат Книг</h5>
-                    <p class="card-text">Управление активными выдачами: оформление новых выдач, прием возвращенных книг и управление бронированием.</p>
-                    <a asp-controller="BookLoans" asp-action="Index" class="btn btn-warning mt-3">
-                        Перейти к Выдачам
-                    </a>
-                </div>
-            </div>
-        </div>
-        <div class="container mt-4">
-            <h2 class="mb-4">Статистика библиотеки</h2>
-
-            <div class="row">
-                <div class="col-md-8">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-white fw-bold">
-                            <i class="bi bi-bar-chart-line"></i> Популярные книги (за 30 дней)
-                        </div>
-                        <div class="card-body">
-                            <canvas id="popularBooksChart" style="max-height: 400px;"></canvas>
-                        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 border-0 shadow-sm librarian-card card-blue">
+                <div class="card-body text-center d-flex flex-column">
+                    <div class="icon-shape bg-primary-soft text-primary mb-3">
+                        <i class="bi bi-book"></i>
                     </div>
+                    <h5 class="card-title fw-bold">Книги</h5>
+                    <p class="card-text text-muted small flex-grow-1">Каталог, авторы, жанры и управление фондом.</p>
+                    <a asp-controller="Librarian" asp-action="BookList" class="btn btn-primary w-100 rounded-pill mt-3">Управлять</a>
                 </div>
+            </div>
+        </div>
 
-                <div class="col-md-4">
-                    <div class="list-group shadow-sm">
-                        <a asp-action="BookList" class="list-group-item list-group-item-action">Управление книгами</a>
-                        <a asp-action="Reservations" class="list-group-item list-group-item-action">Бронирования</a>
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 border-0 shadow-sm librarian-card card-green">
+                <div class="card-body text-center d-flex flex-column">
+                    <div class="icon-shape bg-success-soft text-success mb-3">
+                        <i class="bi bi-people"></i>
                     </div>
+                    <h5 class="card-title fw-bold">Читатели</h5>
+                    <p class="card-text text-muted small flex-grow-1">База читателей, их история и редактирование данных.</p>
+                    <a asp-controller="Readers" asp-action="Index" class="btn btn-success w-100 rounded-pill mt-3">Перейти</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 border-0 shadow-sm librarian-card card-info">
+                <div class="card-body text-center d-flex flex-column">
+                    <div class="icon-shape bg-info-soft text-info mb-3">
+                        <i class="bi bi-bookmark-check"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">Брони</h5>
+                    <p class="card-text text-muted small flex-grow-1">Новые заявки и подготовка книг к выдаче.</p>
+                    <a asp-controller="Librarian" asp-action="Reservations" class="btn btn-info text-white w-100 rounded-pill mt-3">Проверить</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 border-0 shadow-sm librarian-card card-orange">
+                <div class="card-body text-center d-flex flex-column">
+                    <div class="icon-shape bg-warning-soft text-warning mb-3">
+                        <i class="bi bi-arrow-left-right"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">Выдача/Возврат</h5>
+                    <p class="card-text text-muted small flex-grow-1">Оформление выдач и прием возвращенных книг.</p>
+                    <a asp-controller="BookLoans" asp-action="Index" class="btn btn-warning text-white w-100 rounded-pill mt-3">Открыть</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white py-3 border-0">
+                    <h5 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-graph-up-arrow me-2 text-primary"></i> Популярные книги
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="popularBooksChart" style="height: 350px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white py-3 border-0">
+                    <h5 class="mb-0 fw-bold">Быстрые действия</h5>
+                </div>
+                <div class="list-group list-group-flush p-2">
+                    <a asp-action="BookList" class="list-group-item list-group-item-action border-0 rounded-3 mb-1">
+                        <i class="bi bi-plus-circle me-2 text-primary"></i> Добавить новую книгу
+                    </a>
+                    <a asp-action="Reservations" class="list-group-item list-group-item-action border-0 rounded-3 mb-1">
+                        <i class="bi bi-clock-history me-2 text-info"></i> Очередь на бронь
+                    </a>
                 </div>
             </div>
         </div>

@@ -86,7 +86,6 @@
                                 </span>
                             </p>
 
-                            @* Кнопка бронирования *@
                             <form asp-controller="Reader" asp-action="Reserve" method="post">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="BookId" value="@item.IdBook" />

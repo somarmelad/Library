@@ -4,34 +4,74 @@
     ViewData["Title"] = "Читатели";
 }
 
-<h1>Читатели</h1>
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1 text-dark">Картотека читателей</h1>
+            <p class="text-muted small mb-0">Управление базой данных посетителей библиотеки</p>
+        </div>
+        <a asp-action="Create" class="btn btn-primary rounded-pill px-4 shadow-sm">
+            <i class="bi bi-person-plus-fill me-2"></i>Новый читатель
+        </a>
+    </div>
 
-<p>
-    <a asp-action="Create" class="btn btn-primary">Добавить читателя</a>
-</p>
-
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>ФИО</th>
-            <th>Телефон</th>
-            <th>Дата рождения</th>
-            <th>Действия</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>@item.LastName @item.FirstName @item.MiddleName</td>
-                <td>@item.Phone</td>
-                <td>@item.BirthDate?.ToString("dd.MM.yyyy")</td>
-                <td>
-                    <a asp-action="Details" asp-route-id="@item.IdReader" class="btn btn-info btn-sm">Подробности</a>
-                    <a asp-action="Edit" asp-route-id="@item.IdReader" class="btn btn-warning btn-sm">Редактировать</a>
-                    <a asp-action="Delete" asp-route-id="@item.IdReader" class="btn btn-danger btn-sm">Удалить</a>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4 border-0 text-uppercase small fw-bold text-muted">ФИО Читателя</th>
+                            <th class="border-0 text-uppercase small fw-bold text-muted">Контакты</th>
+                            <th class="border-0 text-uppercase small fw-bold text-muted text-center">Дата рождения</th>
+                            <th class="border-0 text-end pe-4 text-uppercase small fw-bold text-muted">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="ps-4 py-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle me-3">
+                                            @item.LastName.Substring(0, 1)
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">@item.LastName @item.FirstName</div>
+                                            <div class="text-muted small">@item.MiddleName</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-telephone text-primary me-2"></i>
+                                        <span class="text-dark">@item.Phone</span>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="text-secondary">
+                                        <i class="bi bi-calendar3 me-1 small"></i>
+                                        @item.BirthDate?.ToString("dd.MM.yyyy")
+                                    </span>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <div class="btn-group">
+                                        <a asp-action="Details" asp-route-id="@item.IdReader" class="btn btn-light btn-sm border" title="Карточка">
+                                            <i class="bi bi-person-vcard text-info"></i>
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@item.IdReader" class="btn btn-light btn-sm border" title="Редактировать">
+                                            <i class="bi bi-pencil text-warning"></i>
+                                        </a>
+                                        <a asp-action="Delete" asp-route-id="@item.IdReader" class="btn btn-light btn-sm border text-danger" title="Удалить">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

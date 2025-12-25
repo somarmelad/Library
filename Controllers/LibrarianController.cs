@@ -12,7 +12,6 @@ using System.Threading.Tasks;
 
 namespace Library2.Controllers
 {
-    // Доступен только пользователям с ролью "Librarian"
     [Authorize(Roles = "Librarian")]
     public class LibrarianController : Controller
     {
