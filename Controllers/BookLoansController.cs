@@ -23,36 +23,50 @@ namespace Library2.Controllers
 
         private async Task PopulateDropdowns(int? bookId = null, int? readerId = null, int? employeeId = null)
         {
-            var availableBooks = await _context.Books
-                .Where(b => b.Status == BookStatus.Available || b.IdBook == bookId) 
+            var booksData = await _context.Books
+                .Where(b => b.Status == BookStatus.Available || b.IdBook == bookId)
+                .Select(b => new { b.IdBook, b.Title }) 
+                .ToListAsync();
+
+            var availableBooks = booksData
                 .Select(b => new
                 {
                     b.IdBook,
                     Text = $"#{b.IdBook} - {b.Title} (Свободна)"
                 })
                 .OrderBy(b => b.Text)
-                .ToListAsync();
+                .ToList();
 
             ViewBag.Books = new SelectList(availableBooks, "IdBook", "Text", bookId);
 
-            var readers = await _context.Readers
+            var readersData = await _context.Readers
+                .Select(r => new { r.IdReader, r.FirstName, r.LastName, r.MiddleName })
+                .ToListAsync();
+
+            var readers = readersData
                 .Select(r => new
                 {
                     r.IdReader,
                     FullName = $"{r.LastName} {r.FirstName} {r.MiddleName}"
                 })
                 .OrderBy(r => r.FullName)
-                .ToListAsync();
+                .ToList();
+
             ViewBag.Readers = new SelectList(readers, "IdReader", "FullName", readerId);
 
-            var employees = await _context.Employees
+            var employeesData = await _context.Employees
+                .Select(e => new { e.IdEmployee, e.FirstName, e.LastName, e.MiddleName })
+                .ToListAsync();
+
+            var employees = employeesData
                 .Select(e => new
                 {
                     e.IdEmployee,
                     FullName = $"{e.LastName} {e.FirstName} {e.MiddleName}"
                 })
                 .OrderBy(e => e.FullName)
-                .ToListAsync();
+                .ToList();
+
             ViewBag.Employees = new SelectList(employees, "IdEmployee", "FullName", employeeId);
         }
         
@@ -130,38 +144,52 @@ namespace Library2.Controllers
 
             if (ModelState.IsValid)
             {
-                using var transaction = await _context.Database.BeginTransactionAsync();
+                var strategy = _context.Database.CreateExecutionStrategy();
+
                 try
                 {
-                    book.Status = BookStatus.Issued;
-                    _context.Update(book);
-
-                    var reservation = await _context.Reservations
-                        .FirstOrDefaultAsync(r => r.BookId == bookLoan.BookId
-                                             && r.ReaderId == bookLoan.ReaderId
-                                             && r.Status == "Ready");
-
-                    if (reservation != null)
+                    await strategy.ExecuteAsync(async () =>
                     {
-                        reservation.Status = "Issued";
-                        _context.Update(reservation);
-                    }
+                        using var transaction = await _context.Database.BeginTransactionAsync();
+                        try
+                        {
+                            
+                            book.Status = BookStatus.Issued;
+                            _context.Update(book);
 
-                    bookLoan.LoanDate = bookLoan.LoanDate.Date;
-                    _context.Add(bookLoan);
+                            var reservation = await _context.Reservations
+                                .FirstOrDefaultAsync(r => r.BookId == bookLoan.BookId
+                                                     && r.ReaderId == bookLoan.ReaderId
+                                                     && r.Status == "Ready");
 
-                    await _context.SaveChangesAsync();
-                    await transaction.CommitAsync();
+                            if (reservation != null)
+                            {
+                                reservation.Status = "Issued";
+                                _context.Update(reservation);
+                            }
+
+                            bookLoan.LoanDate = bookLoan.LoanDate.Date;
+                            _context.Add(bookLoan);
+
+                            await _context.SaveChangesAsync();
+                            await transaction.CommitAsync();
+                        }
+                        catch
+                        {
+                            await transaction.RollbackAsync();
+                            throw;
+                        }
+                    });
 
                     return RedirectToAction(nameof(Index));
                 }
                 catch (Exception ex)
                 {
-                    await transaction.RollbackAsync();
-                    ModelState.AddModelError("", $"Ошибка: {ex.Message}");
+                    ModelState.AddModelError("", $"Ошибка при сохранении: {ex.Message}");
                 }
             }
 
+            // Если форма невалидна, заново заполняем списки и возвращаем вид
             await PopulateDropdowns(bookLoan.BookId, bookLoan.ReaderId, bookLoan.EmployeeId);
             return View(bookLoan);
         }
