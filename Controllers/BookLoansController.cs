@@ -131,6 +131,7 @@ namespace Library2.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(BookLoan bookLoan)
         {
+            // 1. Ищем книгу, которую пытаются выдать
             var book = await _context.Books.FindAsync(bookLoan.BookId);
 
             if (book == null)

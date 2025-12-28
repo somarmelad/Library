@@ -181,7 +181,6 @@ namespace Library2.Controllers
                         return RedirectToAction("Index", "Reader");
                     }
 
-                    // 1. Обновляем статус книги
                     var book = await _context.Books.FirstOrDefaultAsync(b => b.IdBook == reservation.BookId);
                     if (book != null)
                     {
@@ -189,8 +188,7 @@ namespace Library2.Controllers
                         _context.Update(book);
                     }
 
-                    // 2. Обновляем статус брони
-                    reservation.Status = "Cancelled"; // В View у вас проверка на "Cancelled", а в коде было "Canceled" (с одной 'l')
+                    reservation.Status = "Cancelled"; 
                     _context.Update(reservation);
 
                     await _context.SaveChangesAsync();
